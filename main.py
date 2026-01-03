@@ -45,9 +45,9 @@ def generate_image(prompt):
     """ 2. The Artist """
     print("2. Generating Image...")
     response = client.images.generate(
-        model="dall-e-3",
+        model="gpt-image-1.5",
         prompt=prompt,
-        size="1024x1792", # This creates the vertical 4:5 / 9:16 cinematic look
+        size="1200x1500", # This creates the vertical 4:5 / 9:16 cinematic look
         quality="hd",
         n=1,
     )
@@ -115,3 +115,4 @@ if __name__ == "__main__":
         img_url = generate_image(prompt)
         final_img = add_text_and_watermark(img_url, text, pos)
         post_to_facebook(final_img)
+

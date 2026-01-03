@@ -67,16 +67,16 @@ def generate_image(prompt):
     print("2. Generating HD Image (URL Mode)...")
     try:
         response = client.images.generate(
-            model="gpt-image-1.5",
+            model="gpt-image-1",
             prompt=prompt,
             size="1024x1536",
-            quality="high",
             n=1,
         )
+        print("Image generation OK")
         return response.data[0].url
 
     except Exception as e:
-        print("Image Error:", e)
+        print("Image Error RAW:", str(e))
         return None
 
 
@@ -182,3 +182,4 @@ if __name__ == "__main__":
 
     final_image = add_text_and_watermark(image_url, text, position)
     post_to_facebook(final_image)
+

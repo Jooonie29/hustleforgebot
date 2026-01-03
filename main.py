@@ -42,59 +42,70 @@ def generate_concept():
         return None, None, None
 
 def generate_image(prompt):
-    """ 2. The Artist """
-    print("2. Generating Image...")
+    """ 2. The Artist: Perfect 4:5 Ratio (1200x1500) """
+    print("2. Generating HD Image (4:5 Ratio)...")
     response = client.images.generate(
-        model="gpt-image-1.5",
+        model="gpt-image-1.5", 
         prompt=prompt,
-        size="1200x1500", # This creates the vertical 4:5 / 9:16 cinematic look
+        size="1200x1500",  # Real 4:5 resolution for Facebook
         quality="hd",
         n=1,
     )
     return response.data[0].url
 
 def add_text_and_watermark(image_url, text, position):
-    """ 3. The Graphic Designer: Smart Placement """
-    print(f"3. Designing Image (Position: {position})...")
+    """ 3. The Graphic Designer: Anti-Aliased High-Contrast Text """
+    print(f"3. Designing HD Typography (Position: {position})...")
     response = requests.get(image_url)
     img = Image.open(BytesIO(response.content)).convert("RGBA")
-    width, height = img.size
-    overlay = Image.new('RGBA', img.size, (0,0,0,0))
-    draw = ImageDraw.Draw(overlay)
+    
+    # We create a 2x larger canvas for 'Super-Sampling' (makes text crisp)
+    canvas_size = (img.size[0] * 2, img.size[1] * 2)
+    text_layer = Image.new('RGBA', canvas_size, (0,0,0,0))
+    draw = ImageDraw.Draw(text_layer)
     
     try:
-        font_main = ImageFont.truetype("font.ttf", 55) # Larger for vertical
-        font_mark = ImageFont.truetype("font.ttf", 25)
+        # Doubled font size for the super-sampling process
+        font_main = ImageFont.truetype("font.ttf", 100) 
+        font_mark = ImageFont.truetype("font.ttf", 45)
     except:
         font_main = ImageFont.load_default()
         font_mark = ImageFont.load_default()
 
     lines = textwrap.wrap(text, width=22)
-    line_height = 70
-    total_text_height = len(lines) * line_height
+    line_height = 130 
     
-    # SMART POSITIONING
+    # Smart Y-positioning adjusted for 4:5 ratio
     if position == "TOP":
-        start_y = height * 0.20
-    else: # BOTTOM
-        start_y = height * 0.70
+        current_y = canvas_size[1] * 0.18
+    else:
+        current_y = canvas_size[1] * 0.72
 
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_main)
-        x_pos = (width - (bbox[2] - bbox[0])) / 2
-        # Heavy 4-way Shadow for visibility
-        for off in [(3,3), (-3,3), (3,-3), (-3,-3)]:
-            draw.text((x_pos + off[0], start_y + off[1]), line, font=font_main, fill=(0,0,0,230))
-        draw.text((x_pos, start_y), line, font=font_main, fill="#FFFFFF")
-        start_y += line_height
+        x_pos = (canvas_size[0] - (bbox[2] - bbox[0])) / 2
+        
+        # PRO-LEVEL SHADOW: Soft Outer Glow effect
+        for off in range(1, 6): # Multi-layered shadow for depth
+            draw.text((x_pos+off, current_y+off), line, font=font_main, fill=(0,0,0,100))
+        
+        # MAIN TEXT: Pure white with slight tracking (spacing)
+        draw.text((x_pos, current_y), line, font=font_main, fill=(255, 255, 255, 255))
+        current_y += line_height
 
-    # Watermark at the very bottom center
-    mark_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
-    draw.text(((width-(mark_bbox[2]-mark_bbox[0]))/2, height-80), WATERMARK_TEXT, font=font_mark, fill=(255,255,255,150))
+    # Watermark
+    mark_text = WATERMARK_TEXT
+    mark_bbox = draw.textbbox((0, 0), mark_text, font=font_mark)
+    draw.text(((canvas_size[0]-(mark_bbox[2]-mark_bbox[0]))/2, canvas_size[1]-140), 
+              mark_text, font=font_mark, fill=(255,255,255,140))
 
-    combined = Image.alpha_composite(img, overlay)
+    # Downscale the text layer back to original size (This creates the 'Clean' edge)
+    text_layer = text_layer.resize(img.size, resample=Image.LANCZOS)
+    
+    # Combine
+    final_img = Image.alpha_composite(img, text_layer)
     buffer = BytesIO()
-    combined.convert("RGB").save(buffer, format="JPEG", quality=95)
+    final_img.convert("RGB").save(buffer, format="JPEG", quality=98)
     buffer.seek(0)
     return buffer
 
@@ -115,4 +126,5 @@ if __name__ == "__main__":
         img_url = generate_image(prompt)
         final_img = add_text_and_watermark(img_url, text, pos)
         post_to_facebook(final_img)
+
 

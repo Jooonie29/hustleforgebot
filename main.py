@@ -44,48 +44,44 @@ def generate_concept():
         return None, None, None
 
 def generate_image(prompt):
-    """ 2. The Artist: Using GPT Image 1.5 with Base64 output """
-    print("2. Generating HD Image (GPT Image 1.5)...")
+    """ 2. The Artist: Using URL output for maximum compatibility """
+    print("2. Generating HD Image (URL Mode)...")
     try:
         response = client.images.generate(
             model="gpt-image-1.5", 
             prompt=prompt,
-            size="1024x1536", # Best supported vertical ratio
+            size="1024x1536", 
             quality="high",
-            response_format="b64_json",
             n=1,
         )
-        return response.data[0].b64_json
+        return response.data[0].url # Switching back to URL
     except Exception as e:
         print(f"Image Error: {e}")
         return None
 
-def add_text_and_watermark(image_data, text, position):
-    """ 3. The Graphic Designer: Super-Sampling for Crisp Typography """
-    print(f"3. Designing HD Typography (Position: {position})...")
+def add_text_and_watermark(image_url, text, position):
+    """ 3. The Graphic Designer: Downloads URL then processes """
+    print(f"3. Designing HD Typography...")
     
-    # Decode Base64 data
-    img_bytes = base64.b64decode(image_data)
-    img = Image.open(BytesIO(img_bytes)).convert("RGBA")
+    # Download from URL
+    response = requests.get(image_url)
+    img = Image.open(BytesIO(response.content)).convert("RGBA")
     
-    # Create a 2x larger canvas for 'Super-Sampling' (makes text crisp)
+    # --- The rest of your high-quality text code stays exactly the same ---
     canvas_size = (img.size[0] * 2, img.size[1] * 2)
     text_layer = Image.new('RGBA', canvas_size, (0,0,0,0))
     draw = ImageDraw.Draw(text_layer)
     
     try:
-        # Doubled font size for the super-sampling process
         font_main = ImageFont.truetype("font.ttf", 100) 
         font_mark = ImageFont.truetype("font.ttf", 45)
     except:
         font_main = ImageFont.load_default()
         font_mark = ImageFont.load_default()
-        print("Warning: Custom font not found, using default.")
 
     lines = textwrap.wrap(text, width=22)
     line_height = 130 
     
-    # Position logic
     if position == "TOP":
         current_y = canvas_size[1] * 0.18
     else:
@@ -94,24 +90,16 @@ def add_text_and_watermark(image_data, text, position):
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_main)
         x_pos = (canvas_size[0] - (bbox[2] - bbox[0])) / 2
-        
-        # Soft Multi-layer Shadow
         for off in range(1, 6): 
             draw.text((x_pos+off, current_y+off), line, font=font_main, fill=(0,0,0,100))
-        
-        # Main White Text
         draw.text((x_pos, current_y), line, font=font_main, fill=(255, 255, 255, 255))
         current_y += line_height
 
-    # Watermark center bottom
     mark_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
     draw.text(((canvas_size[0]-(mark_bbox[2]-mark_bbox[0]))/2, canvas_size[1]-140), 
               WATERMARK_TEXT, font=font_mark, fill=(255,255,255,140))
 
-    # Downscale for anti-aliasing (The "Clean" secret)
     text_layer = text_layer.resize(img.size, resample=Image.LANCZOS)
-    
-    # Combine and export
     final_img = Image.alpha_composite(img, text_layer)
     buffer = BytesIO()
     final_img.convert("RGB").save(buffer, format="JPEG", quality=98)
@@ -142,3 +130,4 @@ if __name__ == "__main__":
             if img_data:
                 final_img = add_text_and_watermark(img_data, text, pos)
                 post_to_facebook(final_img)
+

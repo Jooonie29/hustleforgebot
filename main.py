@@ -32,7 +32,7 @@ def generate_concept():
     print("1. Generating Concept...")
     
     response = client.chat.completions.create(
-        model="gpt-4-turbo",
+        model="gpt-5.2-chat-latest",
         messages=[
             {"role": "system", "content": "You are the writer for a nostalgic page called 'Yesterday's Letters'. Output format: CAPTION: [text] | SCENE: [visual description]"},
             {"role": "user", "content": "Write a short, poetic sentence about memory, distance, faith, or time (max 18 words). Then describe a matching visual scene of a lone figure in a vast setting. Do NOT describe the art style."}
@@ -145,4 +145,5 @@ if __name__ == "__main__":
         if caption_text:
             raw_img_url = generate_image(img_prompt)
             final_img = add_text_and_watermark(raw_img_url, caption_text)
+
             post_to_facebook(final_img, caption_text)

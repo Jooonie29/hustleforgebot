@@ -1,9 +1,10 @@
 import os
-import requests
 import textwrap
+import base64
+import requests
+from io import BytesIO
 from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
 
 # =========================================================
 # CONFIG
@@ -14,15 +15,17 @@ FB_PAGE_ID = os.environ.get("FB_PAGE_ID")
 
 if not OPENAI_KEY:
     raise Exception("OPENAI_API_KEY missing")
+if not FB_TOKEN or not FB_PAGE_ID:
+    raise Exception("Facebook secrets missing")
 
 client = OpenAI(api_key=OPENAI_KEY)
 
 WATERMARK_TEXT = "© Yesterday's Letters"
 
 STATIC_STYLE = (
-    "Art style: High-fidelity modern Japanese anime digital painting. "
-    "Cinematic lighting, soft bloom, volumetric rays, nostalgic mood. "
-    "Vertical composition with clear space for text."
+    "High-fidelity modern Japanese anime digital painting, cinematic lighting, "
+    "soft bloom, volumetric rays, nostalgic atmosphere, vertical composition "
+    "with clear space for typography."
 )
 
 # =========================================================
@@ -30,120 +33,110 @@ STATIC_STYLE = (
 # =========================================================
 def generate_concept():
     print("1. Generating Concept (GPT-5.2)...")
-    try:
-        r = client.chat.completions.create(
-            model="gpt-5.2-chat-latest",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Output EXACT format:\n"
-                        "TEXT: <sentence>\n"
-                        "POSITION: TOP or BOTTOM\n"
-                        "SCENE: <visual>"
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": "Write a poetic sentence (max 15 words) about memory or time."
-                }
-            ],
-        )
 
-        content = r.choices[0].message.content.strip()
-        lines = content.splitlines()
+    r = client.chat.completions.create(
+        model="gpt-5.2-chat-latest",
+        messages=[
+            {
+                "role": "system",
+                "content": (
+                    "Output EXACTLY:\n"
+                    "TEXT: <sentence>\n"
+                    "POSITION: TOP or BOTTOM\n"
+                    "SCENE: <visual description>"
+                ),
+            },
+            {
+                "role": "user",
+                "content": "Write a poetic sentence (max 15 words) about memory or time."
+            }
+        ],
+    )
 
-        text = lines[0].replace("TEXT:", "").strip()
-        position = lines[1].replace("POSITION:", "").strip().upper()
-        scene = lines[2].replace("SCENE:", "").strip()
+    content = r.choices[0].message.content.strip().splitlines()
 
-        prompt = f"{scene}. {STATIC_STYLE}"
+    text = content[0].replace("TEXT:", "").strip()
+    position = content[1].replace("POSITION:", "").strip().upper()
+    scene = content[2].replace("SCENE:", "").strip()
 
-        print("TEXT:", text)
-        print("POSITION:", position)
-        return text, position, prompt
+    prompt = f"{scene}. {STATIC_STYLE}"
 
-    except Exception as e:
-        print("Concept error:", e)
-        return None, None, None
+    print("TEXT:", text)
+    print("POSITION:", position)
+    return text, position, prompt
 
 # =========================================================
-# 2. IMAGE
+# 2. IMAGE (BASE64 – RELIABLE)
 # =========================================================
-import base64
-
 def generate_image(prompt):
     print("2. Generating HD Image (Base64 Mode)...")
-    try:
-        r = client.images.generate(
-            model="gpt-image-1",
-            prompt=prompt,
-            size="1024x1536",
-            n=1,
-        )
 
-        image_base64 = r.data[0].b64_json
-        if not image_base64:
-            raise Exception("No image data returned")
+    r = client.images.generate(
+        model="gpt-image-1",
+        prompt=prompt,
+        size="1024x1536",
+        n=1,
+    )
 
-        image_bytes = base64.b64decode(image_base64)
-        print("Image generation OK (base64)")
-        return BytesIO(image_bytes)
+    image_b64 = r.data[0].b64_json
+    if not image_b64:
+        raise Exception("No image data returned")
 
-    except Exception as e:
-        print("Image error:", e)
-        return None
+    print("Image generation OK (base64)")
+    return BytesIO(base64.b64decode(image_b64))
 
 # =========================================================
-# 3. DESIGN
+# 3. DESIGN (NO UPSCALE – SAFE)
 # =========================================================
 def add_text_and_watermark(image_buffer, text, position):
     print("3. Designing typography...")
 
     img = Image.open(image_buffer).convert("RGBA")
-
-    canvas = Image.new("RGBA", (img.width * 2, img.height * 2), (0, 0, 0, 0))
+    canvas = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
 
     try:
-        font_main = ImageFont.truetype("font.ttf", 100)
-        font_mark = ImageFont.truetype("font.ttf", 40)
+        font_main = ImageFont.truetype("font.ttf", 90)
+        font_mark = ImageFont.truetype("font.ttf", 38)
     except:
         font_main = ImageFont.load_default()
         font_mark = ImageFont.load_default()
 
     lines = textwrap.wrap(text, 22)
-    y = int(canvas.height * (0.18 if position == "TOP" else 0.72))
+    y = int(img.height * (0.18 if position == "TOP" else 0.72))
 
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_main)
-        x = (canvas.width - (bbox[2] - bbox[0])) / 2
+        x = (img.width - (bbox[2] - bbox[0])) / 2
 
-        for i in range(1, 6):
+        for i in range(1, 4):
             draw.text((x+i, y+i), line, font=font_main, fill=(0, 0, 0, 120))
         draw.text((x, y), line, font=font_main, fill=(255, 255, 255, 255))
-        y += 130
 
-    mark_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
+        y += 120
+
+    wm_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
     draw.text(
-        ((canvas.width - (mark_bbox[2] - mark_bbox[0])) / 2, canvas.height - 120),
+        ((img.width - (wm_bbox[2] - wm_bbox[0])) / 2, img.height - 80),
         WATERMARK_TEXT,
         font=font_mark,
         fill=(255, 255, 255, 140),
     )
 
-    canvas = canvas.resize(img.size, Image.LANCZOS)
     final_img = Image.alpha_composite(img, canvas)
 
-    buf = BytesIO()
-    final_img.convert("RGB").save(buf, "JPEG", quality=98)
-    buf.seek(0)
-    return buf
+    out = BytesIO()
+    final_img.convert("RGB").save(out, "JPEG", quality=95)
+    out.seek(0)
+
+    print("Typography completed successfully")
+    return out
 
 # =========================================================
-# 4. FACEBOOK
+# 4. FACEBOOK POST (PAGE FEED)
 # =========================================================
 def post_to_facebook(image_buffer):
+    print("Proceeding to Facebook post...")
     print("4. Posting to Facebook...")
 
     url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
@@ -156,6 +149,7 @@ def post_to_facebook(image_buffer):
     }
 
     r = requests.post(url, data=data, files=files)
+
     print("FB STATUS:", r.status_code)
     print("FB RESPONSE:", r.text)
 
@@ -168,17 +162,7 @@ def post_to_facebook(image_buffer):
 # MAIN
 # =========================================================
 if __name__ == "__main__":
-    if not FB_TOKEN or not FB_PAGE_ID:
-        raise Exception("Facebook secrets missing")
-
     text, position, prompt = generate_concept()
-    if not text or not prompt:
-        raise Exception("Concept failed")
-
     image_buffer = generate_image(prompt)
-if image_buffer is None:
-    raise Exception("Image generation failed")
-
-final_image = add_text_and_watermark(image_buffer, text, position)
-
-
+    final_image = add_text_and_watermark(image_buffer, text, position)
+    post_to_facebook(final_image)

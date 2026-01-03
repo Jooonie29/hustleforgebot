@@ -97,13 +97,10 @@ def generate_image(prompt):
 # =========================================================
 # 3. DESIGN
 # =========================================================
-def add_text_and_watermark(image_url, text, position):
+def add_text_and_watermark(image_buffer, text, position):
     print("3. Designing typography...")
 
-    r = requests.get(image_url, timeout=60)
-    r.raise_for_status()
-
-    img = Image.open(BytesIO(r.content)).convert("RGBA")
+    img = Image.open(image_buffer).convert("RGBA")
 
     canvas = Image.new("RGBA", (img.width * 2, img.height * 2), (0, 0, 0, 0))
     draw = ImageDraw.Draw(canvas)
@@ -178,10 +175,10 @@ if __name__ == "__main__":
     if not text or not prompt:
         raise Exception("Concept failed")
 
-    image_url = generate_image(prompt)
-    if image_url is None:
-        raise Exception("Image generation failed")
+    image_buffer = generate_image(prompt)
+if image_buffer is None:
+    raise Exception("Image generation failed")
 
-    final_image = add_text_and_watermark(image_url, text, position)
-    post_to_facebook(final_image)
+final_image = add_text_and_watermark(image_buffer, text, position)
+
 

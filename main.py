@@ -6,144 +6,112 @@ from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from io import BytesIO
 
 # --- CONFIGURATION ---
-# The bot gets these keys from your GitHub Secrets
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 FB_TOKEN = os.environ.get("FB_PAGE_ACCESS_TOKEN")
 FB_PAGE_ID = os.environ.get("FB_PAGE_ID")
 
 client = OpenAI(api_key=OPENAI_KEY)
-
-# --- BRANDING SETTINGS ---
-PAGE_NAME = "Yesterday's Letters"
 WATERMARK_TEXT = "© Yesterday's Letters"
 
-# --- STYLE LOCK (The "Glowing Nostalgia" Engine) ---
-# This ensures every image looks like a high-budget anime movie (Makoto Shinkai style)
+# --- STYLE LOCK (4:5 Ratio Optimized) ---
 STATIC_STYLE = (
     "Art style: High-fidelity digital anime art (Makoto Shinkai inspired). "
-    "Features hyper-realistic cinematic lighting, heavy bloom effect, and volumetric god rays. "
-    "Deep, rich shadows contrasting with glowing highlights. "
-    "Nostalgic, dreamy atmosphere with a vast landscape and a large dark negative space in the sky (for text). "
-    "Golden hour or twilight lighting."
+    "Cinematic lighting, heavy bloom, volumetric rays. "
+    "Nostalgic, dreamy atmosphere. Aspect ratio is vertical 4:5. "
+    "Ensure there is a large, clean negative space in either the TOP or BOTTOM for text."
 )
 
 def generate_concept():
-    """ 1. The Author: Writes a 'Letter Fragment' """
+    """ 1. The Author: Writes the letter and decides layout """
     print("1. Generating Concept...")
-    
     response = client.chat.completions.create(
         model="gpt-5.2-chat-latest",
         messages=[
-            {"role": "system", "content": "You are the writer for a nostalgic page called 'Yesterday's Letters'. Output format: CAPTION: [text] | SCENE: [visual description]"},
-            {"role": "user", "content": "Write a short, poetic sentence about memory, distance, faith, or time (max 18 words). Then describe a matching visual scene of a lone figure in a vast setting. Do NOT describe the art style."}
+            {"role": "system", "content": "You are the writer for 'Yesterday's Letters'. Output format: TEXT: [poetic sentence] | POSITION: [TOP or BOTTOM] | SCENE: [visual description]"},
+            {"role": "user", "content": "Write a poetic sentence (max 15 words) and decide if the text should be at the TOP or BOTTOM based on the scene's composition."}
         ]
     )
     content = response.choices[0].message.content
-    
     try:
         parts = content.split("|")
-        caption = parts[0].replace("CAPTION:", "").strip()
-        scene_description = parts[1].replace("SCENE:", "").strip()
-        
-        # Combine Scene + Fixed Style
-        final_prompt = f"{scene_description}. {STATIC_STYLE}"
-        return caption, final_prompt
+        text = parts[0].replace("TEXT:", "").strip()
+        pos = parts[1].replace("POSITION:", "").strip().upper()
+        scene = parts[2].replace("SCENE:", "").strip()
+        return text, pos, f"{scene}. {STATIC_STYLE}"
     except:
-        print("Error parsing GPT response.")
-        return None, None
+        return None, None, None
 
 def generate_image(prompt):
-    """ 2. The Artist: Draws the image """
-    print(f"2. Generating Image...")
-    
+    """ 2. The Artist """
+    print("2. Generating Image...")
     response = client.images.generate(
         model="dall-e-3",
         prompt=prompt,
-        size="1024x1024",
-        quality="standard",
+        size="1024x1792", # This creates the vertical 4:5 / 9:16 cinematic look
+        quality="hd",
         n=1,
     )
     return response.data[0].url
 
-def add_text_and_watermark(image_url, text):
-    """ 3. The Graphic Designer: Overlays Caption + Watermark """
-    print("3. Designing Image...")
-    
+def add_text_and_watermark(image_url, text, position):
+    """ 3. The Graphic Designer: Smart Placement """
+    print(f"3. Designing Image (Position: {position})...")
     response = requests.get(image_url)
     img = Image.open(BytesIO(response.content)).convert("RGBA")
-    
-    # ENHANCEMENT: Boost contrast slightly to make shadows pop (Cinematic look)
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.1) 
-    
     width, height = img.size
-    draw = ImageDraw.Draw(img)
+    overlay = Image.new('RGBA', img.size, (0,0,0,0))
+    draw = ImageDraw.Draw(overlay)
     
-    # --- LOAD FONTS ---
-    # Attempts to load your 'font.ttf' file. Falls back to default if missing.
     try:
-        font_main = ImageFont.truetype("font.ttf", 42) 
-        font_mark = ImageFont.truetype("font.ttf", 20)
+        font_main = ImageFont.truetype("font.ttf", 55) # Larger for vertical
+        font_mark = ImageFont.truetype("font.ttf", 25)
     except:
         font_main = ImageFont.load_default()
         font_mark = ImageFont.load_default()
-        print("Warning: Custom font not found. Using default.")
 
-    # --- PART A: MAIN CAPTION ---
-    lines = textwrap.wrap(text, width=28) 
-    line_height = 55 
-    total_height = len(lines) * line_height
+    lines = textwrap.wrap(text, width=22)
+    line_height = 70
+    total_text_height = len(lines) * line_height
     
-    # Position: Top 30% (The Sky)
-    start_y = (height * 0.30) - (total_height / 2)
-    
+    # SMART POSITIONING
+    if position == "TOP":
+        start_y = height * 0.20
+    else: # BOTTOM
+        start_y = height * 0.70
+
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_main)
-        text_width = bbox[2] - bbox[0]
-        x_pos = (width - text_width) / 2
-        
-        # Heavy Dark Shadow (offset 3px) for readability against bright bloom
-        draw.text((x_pos + 3, start_y + 3), line, font=font_main, fill=(0, 0, 0, 200))
-        # Main Text (Soft White)
-        draw.text((x_pos, start_y), line, font=font_main, fill="#F8F8F8")
+        x_pos = (width - (bbox[2] - bbox[0])) / 2
+        # Heavy 4-way Shadow for visibility
+        for off in [(3,3), (-3,3), (3,-3), (-3,-3)]:
+            draw.text((x_pos + off[0], start_y + off[1]), line, font=font_main, fill=(0,0,0,230))
+        draw.text((x_pos, start_y), line, font=font_main, fill="#FFFFFF")
         start_y += line_height
 
-    # --- PART B: BRAND WATERMARK ---
-    bbox_mark = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
-    mark_width = bbox_mark[2] - bbox_mark[0]
-    mark_x = (width - mark_width) / 2
-    mark_y = height - 50 
-    
-    # Watermark (White with 50% opacity)
-    draw.text((mark_x, mark_y), WATERMARK_TEXT, font=font_mark, fill=(255, 255, 255, 140))
+    # Watermark at the very bottom center
+    mark_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
+    draw.text(((width-(mark_bbox[2]-mark_bbox[0]))/2, height-80), WATERMARK_TEXT, font=font_mark, fill=(255,255,255,150))
 
-    # Save
-    final_buffer = BytesIO()
-    img.convert("RGB").save(final_buffer, format="JPEG", quality=95)
-    final_buffer.seek(0)
-    return final_buffer
+    combined = Image.alpha_composite(img, overlay)
+    buffer = BytesIO()
+    combined.convert("RGB").save(buffer, format="JPEG", quality=95)
+    buffer.seek(0)
+    return buffer
 
-def post_to_facebook(image_buffer, caption):
-    """ 4. The Publisher """
-    print("4. Posting to Facebook...")
+def post_to_facebook(image_buffer):
+    """ 4. The Publisher: NO CAPTION """
+    print("4. Posting Image only...")
     url = f"https://graph.facebook.com/{FB_PAGE_ID}/photos"
-    payload = { 'access_token': FB_TOKEN, 'message': caption }
+    # Note: 'message' is removed to keep the post clean
+    payload = { 'access_token': FB_TOKEN }
     files = { 'source': ('image.jpg', image_buffer, 'image/jpeg') }
-    
     r = requests.post(url, data=payload, files=files)
-    if r.status_code == 200:
-        print("SUCCESS! Post is live.")
-    else:
-        print(f"FAILED: {r.text}")
+    if r.status_code == 200: print("SUCCESS!")
+    else: print(f"FAILED: {r.text}")
 
-# --- EXECUTE ---
 if __name__ == "__main__":
-    if not OPENAI_KEY or not FB_TOKEN:
-        print("Error: Missing API Keys. Check GitHub Secrets.")
-    else:
-        caption_text, img_prompt = generate_concept()
-        if caption_text:
-            raw_img_url = generate_image(img_prompt)
-            final_img = add_text_and_watermark(raw_img_url, caption_text)
-
-            post_to_facebook(final_img, caption_text)
+    text, pos, prompt = generate_concept()
+    if text:
+        img_url = generate_image(prompt)
+        final_img = add_text_and_watermark(img_url, text, pos)
+        post_to_facebook(final_img)

@@ -24,22 +24,15 @@ if not FB_TOKEN or not FB_PAGE_ID:
 
 client = OpenAI(api_key=OPENAI_KEY)
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FONT_DIR = BASE_DIR  # fonts are in repo root
-
-FONT_MAIN = os.path.join(FONT_DIR, "LibreBaskerville-Regular.ttf")
-FONT_WATERMARK = os.path.join(FONT_DIR, "IBMPlexMono-Regular.ttf")
-
-WATERMARK_TEXT = "© Yesterday's Letters"
-
 # =========================================================
-# ENGAGEMENT WINDOWS (PH TIME)
+# COST CONTROL
 # =========================================================
+# RULE #2: ONE POST PER DAY ONLY
 POST_WINDOWS = [
-    (7, 9),    # morning
-    (11, 13),  # midday
-    (19, 21),  # evening
+    (19, 21),  # 7–9 PM ONLY
 ]
+
+LAST_POST_FILE = "last_post.txt"
 
 def is_good_posting_time():
     tz = pytz.timezone(TIMEZONE)
@@ -48,14 +41,14 @@ def is_good_posting_time():
 
 def already_posted_today():
     today = datetime.now(pytz.timezone(TIMEZONE)).strftime("%Y-%m-%d")
-    if os.path.exists("last_post.txt"):
-        with open("last_post.txt") as f:
+    if os.path.exists(LAST_POST_FILE):
+        with open(LAST_POST_FILE) as f:
             return f.read().strip() == today
     return False
 
-def mark_posted():
+def mark_posted_today():
     today = datetime.now(pytz.timezone(TIMEZONE)).strftime("%Y-%m-%d")
-    with open("last_post.txt", "w") as f:
+    with open(LAST_POST_FILE, "w") as f:
         f.write(today)
 
 # =========================================================
@@ -69,31 +62,31 @@ THOUGHT_BANK = {
     ],
     "forest": [
         "Growth is quiet when no one is watching.",
-        "I stayed long enough to hear myself think.",
-        "Not everything that’s slow is lost."
+        "Not everything that’s slow is lost.",
+        "I stayed long enough to hear myself think."
     ],
     "road": [
         "I didn’t know where I was going, only that I had to keep walking.",
-        "Faith sometimes looks like taking the next step.",
-        "The road teaches patience."
+        "The road teaches patience.",
+        "Faith sometimes looks like the next step."
     ],
     "water": [
         "Still waters teach louder lessons.",
-        "I sat with my thoughts until they softened.",
-        "Some answers come quietly."
+        "Some answers arrive gently.",
+        "I let go of what I could no longer carry."
     ],
     "night": [
         "God has a plan. Trust, wait, and believe.",
-        "The stars remind me I’m not alone.",
-        "I learned to rest under the same sky."
+        "Even here, I was not forgotten.",
+        "The stars stayed with me."
     ]
 }
 
 # =========================================================
-# SCENE → EMOTION PAIRING
+# SCENE → PROMPT
 # =========================================================
-SCENE_STYLES = {
-    "rain": "rainy night street, umbrella, soft streetlights, reflective pavement",
+SCENE_PROMPTS = {
+    "rain": "night rain, umbrella, wet pavement, soft streetlights",
     "forest": "quiet forest clearing, moonlight through trees",
     "road": "empty road at dusk, long shadows, distant horizon",
     "water": "calm lake at night, stars reflected on water",
@@ -106,16 +99,43 @@ STATIC_STYLE = (
     "Painterly textures, restrained line work, nostalgic mood."
 )
 
+# =========================================================
+# MONTHLY VISUAL THEMES (NO EXTRA COST)
+# =========================================================
+MONTHLY_THEMES = {
+    "01": "Cool blue tones, quiet beginnings, minimal contrast.",
+    "02": "Warm highlights, soft shadows, longing and memory.",
+    "03": "Balanced neutral light, sense of becoming.",
+    "04": "Bright diffused light, hopeful softness.",
+    "05": "Clear light, grounded stillness.",
+    "06": "Golden hour warmth, nostalgic glow.",
+    "07": "Cool night tones, silence and depth.",
+    "08": "Muted warmth, waiting and pause.",
+    "09": "Soft desaturation, letting go.",
+    "10": "Higher contrast, cinematic depth.",
+    "11": "Warm interior glow, gratitude.",
+    "12": "Cold nights with small warm lights, quiet hope."
+}
+
+def get_monthly_theme():
+    month = datetime.now(pytz.timezone(TIMEZONE)).strftime("%m")
+    return MONTHLY_THEMES.get(month, "")
+
 def choose_scene_and_text():
     scene = random.choice(list(THOUGHT_BANK.keys()))
     text = random.choice(THOUGHT_BANK[scene])
     return scene, text
 
 # =========================================================
-# IMAGE GENERATION
+# IMAGE GENERATION (CALLED ONLY IF POSTING)
 # =========================================================
 def generate_image(scene):
-    prompt = f"{SCENE_STYLES[scene]}. {STATIC_STYLE}"
+    theme = get_monthly_theme()
+    prompt = (
+        f"{SCENE_PROMPTS[scene]}. "
+        f"{STATIC_STYLE} "
+        f"{theme}"
+    )
 
     r = client.images.generate(
         model="gpt-image-1",
@@ -127,18 +147,20 @@ def generate_image(scene):
     image_b64 = r.data[0].b64_json
     return BytesIO(base64.b64decode(image_b64))
 
-def crop_to_4_5(img):
-    target_height = int(img.width * 5 / 4)
-    top = (img.height - target_height) // 2
-    return img.crop((0, top, img.width, top + target_height))
+# =========================================================
+# IMAGE PROCESSING
+# =========================================================
+FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
+WATERMARK_TEXT = "© Yesterday's Letters"
 
-# =========================================================
-# SMART TYPOGRAPHY
-# =========================================================
-def is_dark_region(img, box):
+def crop_to_4_5(img):
+    target_h = int(img.width * 5 / 4)
+    top = (img.height - target_h) // 2
+    return img.crop((0, top, img.width, top + target_h))
+
+def is_dark(img, box):
     crop = img.crop(box).convert("L")
-    brightness = ImageStat.Stat(crop).mean[0]
-    return brightness < 130
+    return ImageStat.Stat(crop).mean[0] < 130
 
 def add_text(image_buffer, text):
     img = Image.open(image_buffer).convert("RGBA")
@@ -147,61 +169,31 @@ def add_text(image_buffer, text):
     draw_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(draw_layer)
 
-    font_main = ImageFont.truetype(FONT_MAIN, 44)
-    font_mark = ImageFont.truetype(FONT_WATERMARK, 22)
+    font = ImageFont.truetype(FONT_MAIN, 42)
+    box_w = int(img.width * 0.72)
+    box_h = 220
+    box_x = (img.width - box_w) // 2
+    box_y = int(img.height * 0.45)
 
-    # Fixed text box (prevents drift)
-    box_width = int(img.width * 0.72)
-    box_height = 220
-    box_x = (img.width - box_width) // 2
+    dark = is_dark(img, (box_x, box_y, box_x + box_w, box_y + box_h))
+    color = (245, 245, 240, 255) if dark else (30, 30, 30, 255)
 
-    # Candidate Y positions (safe zones)
-    y_positions = [
-        int(img.height * 0.18),
-        int(img.height * 0.35),
-        int(img.height * 0.55)
-    ]
-
-    chosen_y = y_positions[0]
-    for y in y_positions:
-        region = (box_x, y, box_x + box_width, y + box_height)
-        if is_dark_region(img, region):
-            chosen_y = y
-            break
-
-    text_color = (245, 245, 240, 255) if is_dark_region(
-        img, (box_x, chosen_y, box_x + box_width, chosen_y + box_height)
-    ) else (20, 20, 20, 255)
-
-    # Wrap manually
     words = text.split()
     lines, line = [], ""
     for w in words:
         test = f"{line} {w}".strip()
-        if draw.textlength(test, font=font_main) <= box_width:
+        if draw.textlength(test, font=font) <= box_w:
             line = test
         else:
             lines.append(line)
             line = w
     lines.append(line)
 
-    total_text_height = len(lines) * 52
-    start_y = chosen_y + (box_height - total_text_height) // 2
-
+    y = box_y + (box_h - len(lines) * 54) // 2
     for l in lines:
-        w = draw.textlength(l, font=font_main)
-        x = (img.width - w) // 2
-        draw.text((x, start_y), l, font=font_main, fill=text_color)
-        start_y += 52
-
-    # Watermark
-    wm_w = draw.textlength(WATERMARK_TEXT, font=font_mark)
-    draw.text(
-        ((img.width - wm_w) // 2, img.height - 50),
-        WATERMARK_TEXT,
-        font=font_mark,
-        fill=(255, 255, 255, 140),
-    )
+        w = draw.textlength(l, font=font)
+        draw.text(((img.width - w) // 2, y), l, font=font, fill=color)
+        y += 54
 
     final = Image.alpha_composite(img, draw_layer)
     out = BytesIO()
@@ -214,30 +206,28 @@ def add_text(image_buffer, text):
 # =========================================================
 def post_to_facebook(image_buffer):
     url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
-    data = {
-        "access_token": FB_TOKEN,
-        "published": "true"
-    }
-    files = {
-        "source": ("image.jpg", image_buffer, "image/jpeg")
-    }
+    data = {"access_token": FB_TOKEN, "published": "true"}
+    files = {"source": ("image.jpg", image_buffer, "image/jpeg")}
 
     r = requests.post(url, data=data, files=files)
     if r.status_code != 200:
         raise Exception(r.text)
 
 # =========================================================
-# MAIN
+# MAIN (STRICT ORDER — DO NOT CHANGE)
 # =========================================================
 if __name__ == "__main__":
+
+    # RULE #1 — NEVER GENERATE UNLESS WE WILL POST
     if not is_good_posting_time():
-        print("Outside engagement window. Skipping.")
+        print("Outside posting window. Skipping.")
         exit(0)
 
     if already_posted_today():
         print("Already posted today. Skipping.")
         exit(0)
 
+    # ONLY NOW DO WE SPEND MONEY
     scene, text = choose_scene_and_text()
     print("SCENE:", scene)
     print("TEXT:", text)
@@ -245,6 +235,6 @@ if __name__ == "__main__":
     image_buffer = generate_image(scene)
     final_image = add_text(image_buffer, text)
     post_to_facebook(final_image)
-    mark_posted()
 
+    mark_posted_today()
     print("Post successful.")

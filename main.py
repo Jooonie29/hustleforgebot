@@ -1,15 +1,13 @@
 import os
 import random
 import base64
-import textwrap
 import requests
 from io import BytesIO
-
 from openai import OpenAI
 from PIL import Image, ImageDraw, ImageFont, ImageStat
 
 # =========================================================
-# ENV / KEYS
+# ENV / SECRETS
 # =========================================================
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 FB_TOKEN = os.environ.get("FB_PAGE_ACCESS_TOKEN")
@@ -25,81 +23,91 @@ client = OpenAI(api_key=OPENAI_KEY)
 # =========================================================
 # PATHS
 # =========================================================
-FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
-FONT_WATERMARK = "fonts/LibreBaskerville-Regular.ttf"
-
+FONT_PATH = "fonts/LibreBaskerville-Regular.ttf"
 WATERMARK_TEXT = "© Yesterday's Letters"
 
 # =========================================================
-# CURATED HUMAN THOUGHT BANK (NO LLM)
+# HUMAN THOUGHT BANK (NO LLM)
 # =========================================================
 THOUGHT_BANK = {
-    "rain": [
+    "prayer": [
+        "Some nights, faith is the only shelter.",
         "Please God, let me win this time.",
-        "I whispered prayers louder than the rain.",
-        "Some nights, faith is the only shelter."
+        "I don’t have answers, only prayers."
     ],
-    "road": [
-        "I don’t know where this leads, but I keep walking.",
-        "Uncertainty taught me how to trust.",
-        "I stayed even when I didn’t see the way forward."
+    "uncertainty": [
+        "I don’t know where this road leads, but I keep walking.",
+        "Nothing feels certain, except that I must continue."
     ],
-    "forest": [
+    "reflection": [
         "Growth is quiet when no one is watching.",
-        "I healed slowly, like trees do.",
-        "Not every season asks you to bloom."
+        "I didn’t realize I was healing until it stopped hurting."
     ],
-    "water": [
-        "I let go of what I couldn’t carry anymore.",
-        "Time softened the memories I thought would drown me.",
-        "Some answers arrive gently."
-    ],
-    "window": [
-        "I watched life change before I was ready.",
-        "I waited longer than I planned.",
-        "Hope looked different from the other side."
-    ],
-    "night": [
-        "Even here, God didn’t forget me.",
-        "I learned to breathe in the dark.",
-        "The quiet stayed with me."
+    "hope": [
+        "May you receive what you’ve been praying for in 2026.",
+        "God has a plan. Trust, wait, and believe."
     ]
 }
 
 # =========================================================
-# SCENE → EMOTION PAIRING
+# SCENE → EMOTION → PROMPT
 # =========================================================
 SCENES = {
-    "rain": "night rain, single figure holding umbrella, reflective ground",
-    "road": "empty road at dusk, long perspective, solitary figure",
-    "forest": "dense forest clearing, moonlight through trees",
-    "water": "riverbank at night, calm flowing water, soft reflections",
-    "window": "warm interior light, person looking out window at night",
-    "night": "open landscape under starry sky, quiet isolation"
+    "night_rain": {
+        "emotion": "prayer",
+        "prompt": (
+            "A solitary figure standing under an umbrella in heavy night rain, "
+            "wet pavement reflecting warm street lights, quiet street, deep shadows"
+        )
+    },
+    "forest": {
+        "emotion": "reflection",
+        "prompt": (
+            "A lone figure standing in a dense forest clearing at dusk, "
+            "soft moonlight filtering through trees, stillness, depth"
+        )
+    },
+    "road": {
+        "emotion": "uncertainty",
+        "prompt": (
+            "A person standing on an empty road at twilight, road disappearing into distance, "
+            "vast sky, quiet uncertainty"
+        )
+    },
+    "water": {
+        "emotion": "hope",
+        "prompt": (
+            "A figure sitting near calm water at night, gentle reflections, stars above, "
+            "peaceful atmosphere"
+        )
+    }
 }
 
 STATIC_STYLE = (
-    "Studio Ghibli–inspired illustration with realistic cinematic lighting. "
-    "Physically believable shadows, soft bloom highlights, gentle lens diffusion. "
-    "Painterly textures, restrained line work, natural color grading. "
-    "Subtle film grain, nostalgic atmosphere, emotional stillness."
+    "Studio Ghibli–inspired cinematic illustration with realistic lighting. "
+    "Physically accurate soft shadows, subtle bloom, nostalgic mood, "
+    "painterly textures, restrained line work, film grain, emotional stillness."
 )
 
 # =========================================================
-# 1. PICK SCENE + HUMAN TEXT
+# 1. SELECT SCENE + TEXT
 # =========================================================
-def pick_concept():
+def select_concept():
     scene_key = random.choice(list(SCENES.keys()))
-    text = random.choice(THOUGHT_BANK[scene_key])
-    scene_prompt = f"{SCENES[scene_key]}. {STATIC_STYLE}"
+    scene = SCENES[scene_key]
+
+    emotion = scene["emotion"]
+    text = random.choice(THOUGHT_BANK[emotion])
+
+    prompt = f"{scene['prompt']}. {STATIC_STYLE}"
 
     print("SCENE:", scene_key)
     print("TEXT:", text)
 
-    return text, scene_prompt
+    return text, prompt
 
 # =========================================================
-# 2. IMAGE GENERATION (SUPPORTED SIZE ONLY)
+# 2. IMAGE GENERATION (SUPPORTED SIZE)
 # =========================================================
 def generate_image(prompt):
     r = client.images.generate(
@@ -113,105 +121,122 @@ def generate_image(prompt):
     return BytesIO(base64.b64decode(image_b64))
 
 # =========================================================
-# 3. SAFE CROP TO 4:5
+# 3. SAFE CROP TO 4:5 (1024x1280)
 # =========================================================
 def crop_to_4_5(img):
-    target_h = int(img.width * 5 / 4)
-    top = (img.height - target_h) // 2
-    return img.crop((0, top, img.width, top + target_h))
+    target_height = int(img.width * 5 / 4)
+    top = (img.height - target_height) // 2
+    return img.crop((0, top, img.width, top + target_height))
 
 # =========================================================
-# 4. AUTO CONTRAST DETECTION
+# 4. SMART TEXT PLACEMENT + TYPOGRAPHY
 # =========================================================
-def is_background_dark(img, box):
-    crop = img.crop(box)
-    stat = ImageStat.Stat(crop)
-    return sum(stat.mean) / 3 < 120
-
-# =========================================================
-# 5. LOCKED TEXT BOX + AUTO FONT SCALE
-# =========================================================
-def draw_text(img, text):
-    draw = ImageDraw.Draw(img)
-
-    box_width = int(img.width * 0.8)
-    box_height = 300
-    box_x = (img.width - box_width) // 2
-    box_y = int(img.height * 0.18)
-
-    box = (box_x, box_y, box_x + box_width, box_y + box_height)
-    dark_bg = is_background_dark(img, box)
-
-    fill = (245, 245, 240, 255) if dark_bg else (30, 30, 30, 255)
-    shadow = (0, 0, 0, 80) if dark_bg else (255, 255, 255, 80)
-
-    font_size = 56
-    while font_size > 34:
-        font = ImageFont.truetype(FONT_MAIN, font_size)
-        wrapped = textwrap.wrap(text, width=28)
-
-        total_height = len(wrapped) * (font_size + 10)
-        if total_height <= box_height:
-            break
-        font_size -= 2
-
-    y = box_y + (box_height - total_height) // 2
-
-    for line in wrapped:
-        w = draw.textbbox((0, 0), line, font=font)[2]
-        x = (img.width - w) // 2
-
-        draw.text((x + 1, y + 1), line, font=font, fill=shadow)
-        draw.text((x, y), line, font=font, fill=fill)
-        y += font_size + 10
-
-# =========================================================
-# 6. WATERMARK
-# =========================================================
-def draw_watermark(img):
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(FONT_WATERMARK, 28)
-
-    w = draw.textbbox((0, 0), WATERMARK_TEXT, font=font)[2]
-    draw.text(
-        ((img.width - w) // 2, img.height - 60),
-        WATERMARK_TEXT,
-        font=font,
-        fill=(255, 255, 255, 140),
-    )
-
-# =========================================================
-# 7. COMPOSE FINAL IMAGE
-# =========================================================
-def compose(image_buffer, text):
-    img = Image.open(image_buffer).convert("RGB")
+def add_text(image_buffer, text):
+    img = Image.open(image_buffer).convert("RGBA")
     img = crop_to_4_5(img)
 
-    draw_text(img, text)
-    draw_watermark(img)
+    draw = ImageDraw.Draw(img)
+
+    FONT_SIZE = 42
+    LINE_HEIGHT = int(FONT_SIZE * 1.3)
+    TEXT_BOX_HEIGHT = 220
+    MAX_TEXT_WIDTH = int(img.width * 0.58)
+
+    font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+    watermark_font = ImageFont.truetype(FONT_PATH, 26)
+
+    # ---- Candidate regions (y start positions)
+    regions = [
+        int(img.height * 0.18),
+        int(img.height * 0.30),
+        int(img.height * 0.42),
+        int(img.height * 0.55),
+        int(img.height * 0.68),
+    ]
+
+    def region_score(y):
+        box = img.crop((0, y, img.width, y + TEXT_BOX_HEIGHT)).convert("L")
+        stat = ImageStat.Stat(box)
+        return stat.var[0]  # lower variance = quieter background
+
+    best_y = min(regions, key=region_score)
+
+    # ---- Wrap text by pixel width
+    words = text.split()
+    lines = []
+    current = ""
+
+    for w in words:
+        test = current + (" " if current else "") + w
+        if draw.textbbox((0, 0), test, font=font)[2] <= MAX_TEXT_WIDTH:
+            current = test
+        else:
+            lines.append(current)
+            current = w
+    if current:
+        lines.append(current)
+
+    # ---- Ensure fixed height (shrink font if needed)
+    while len(lines) * LINE_HEIGHT > TEXT_BOX_HEIGHT:
+        FONT_SIZE -= 2
+        LINE_HEIGHT = int(FONT_SIZE * 1.3)
+        font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+
+    text_height = len(lines) * LINE_HEIGHT
+    y = best_y + (TEXT_BOX_HEIGHT - text_height) // 2
+
+    # ---- Auto contrast detection
+    sample = img.crop((img.width//4, best_y, img.width*3//4, best_y+TEXT_BOX_HEIGHT)).convert("L")
+    brightness = ImageStat.Stat(sample).mean[0]
+
+    if brightness < 120:
+        text_color = (245, 245, 240, 255)
+        shadow = (0, 0, 0, 90)
+    else:
+        text_color = (30, 30, 30, 255)
+        shadow = (255, 255, 255, 80)
+
+    # ---- Draw text
+    for line in lines:
+        w = draw.textbbox((0, 0), line, font=font)[2]
+        x = (img.width - w) // 2
+        draw.text((x+1, y+1), line, font=font, fill=shadow)
+        draw.text((x, y), line, font=font, fill=text_color)
+        y += LINE_HEIGHT
+
+    # ---- Watermark
+    wm_w = draw.textbbox((0, 0), WATERMARK_TEXT, font=watermark_font)[2]
+    draw.text(
+        ((img.width - wm_w) // 2, img.height - 48),
+        WATERMARK_TEXT,
+        font=watermark_font,
+        fill=(255, 255, 255, 120)
+    )
 
     out = BytesIO()
-    img.save(out, "JPEG", quality=95)
+    img.convert("RGB").save(out, "JPEG", quality=95)
     out.seek(0)
     return out
 
 # =========================================================
-# 8. FACEBOOK POST
+# 5. FACEBOOK POST
 # =========================================================
 def post_to_facebook(image_buffer):
     url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
-    data = {"access_token": FB_TOKEN, "published": "true"}
+    data = {"access_token": FB_TOKEN}
     files = {"source": ("image.jpg", image_buffer, "image/jpeg")}
 
     r = requests.post(url, data=data, files=files)
     if r.status_code != 200:
         raise Exception(r.text)
 
+    print("Posted successfully")
+
 # =========================================================
 # MAIN
 # =========================================================
 if __name__ == "__main__":
-    text, prompt = pick_concept()
-    img_buf = generate_image(prompt)
-    final = compose(img_buf, text)
+    text, prompt = select_concept()
+    image = generate_image(prompt)
+    final = add_text(image, text)
     post_to_facebook(final)

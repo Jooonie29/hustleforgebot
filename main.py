@@ -116,25 +116,26 @@ def add_text_and_watermark(image_buffer, text, position):
     draw = ImageDraw.Draw(canvas)
 
     try:
-        font_main = ImageFont.truetype("font.ttf", 56)
-        font_mark = ImageFont.truetype("font.ttf", 32)
+        font_main = ImageFont.truetype("font.ttf", 54)
+        font_mark = ImageFont.truetype("font.ttf", 30)
+
     except:
         font_main = ImageFont.load_default()
         font_mark = ImageFont.load_default()
 
-    lines = textwrap.wrap(text, 28)
+    lines = textwrap.wrap(text, 26)
     y = int(img.height * (0.18 if position == "TOP" else 0.72))
 
     for line in lines:
         bbox = draw.textbbox((0, 0), line, font=font_main)
         x = (img.width - (bbox[2] - bbox[0])) / 2
 
-        # soft editorial shadow
-        for i in range(1, 3):
-            draw.text((x + i, y + i), line, font=font_main, fill=(0, 0, 0, 80))
+        # ultra-soft shadow for legibility only
+draw.text((x + 1, y + 1), line, font=font_main, fill=(0, 0, 0, 60))
 
-        draw.text((x, y), line, font=font_main, fill=(255, 255, 255, 240))
-        y += 78
+# slightly warm white (matches reference)
+draw.text((x, y), line, font=font_main, fill=(245, 245, 240, 255))
+        y += 74
 
     # watermark
     wm_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
@@ -181,3 +182,4 @@ if __name__ == "__main__":
     image_buffer = generate_image(prompt)
     final_image = add_text_and_watermark(image_buffer, text, position)
     post_to_facebook(final_image)
+

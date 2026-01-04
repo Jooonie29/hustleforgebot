@@ -1,13 +1,15 @@
 import os
-import textwrap
+import random
 import base64
+import textwrap
 import requests
 from io import BytesIO
+
 from openai import OpenAI
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageStat
 
 # =========================================================
-# CONFIG
+# ENV / KEYS
 # =========================================================
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY")
 FB_TOKEN = os.environ.get("FB_PAGE_ACCESS_TOKEN")
@@ -20,166 +22,196 @@ if not FB_TOKEN or not FB_PAGE_ID:
 
 client = OpenAI(api_key=OPENAI_KEY)
 
+# =========================================================
+# PATHS
+# =========================================================
+FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
+FONT_WATERMARK = "fonts/LibreBaskerville-Regular.ttf"
+
 WATERMARK_TEXT = "© Yesterday's Letters"
 
 # =========================================================
-# IMAGE STYLE (CINEMATIC, NOSTALGIC)
+# CURATED HUMAN THOUGHT BANK (NO LLM)
 # =========================================================
+THOUGHT_BANK = {
+    "rain": [
+        "Please God, let me win this time.",
+        "I whispered prayers louder than the rain.",
+        "Some nights, faith is the only shelter."
+    ],
+    "road": [
+        "I don’t know where this leads, but I keep walking.",
+        "Uncertainty taught me how to trust.",
+        "I stayed even when I didn’t see the way forward."
+    ],
+    "forest": [
+        "Growth is quiet when no one is watching.",
+        "I healed slowly, like trees do.",
+        "Not every season asks you to bloom."
+    ],
+    "water": [
+        "I let go of what I couldn’t carry anymore.",
+        "Time softened the memories I thought would drown me.",
+        "Some answers arrive gently."
+    ],
+    "window": [
+        "I watched life change before I was ready.",
+        "I waited longer than I planned.",
+        "Hope looked different from the other side."
+    ],
+    "night": [
+        "Even here, God didn’t forget me.",
+        "I learned to breathe in the dark.",
+        "The quiet stayed with me."
+    ]
+}
+
+# =========================================================
+# SCENE → EMOTION PAIRING
+# =========================================================
+SCENES = {
+    "rain": "night rain, single figure holding umbrella, reflective ground",
+    "road": "empty road at dusk, long perspective, solitary figure",
+    "forest": "dense forest clearing, moonlight through trees",
+    "water": "riverbank at night, calm flowing water, soft reflections",
+    "window": "warm interior light, person looking out window at night",
+    "night": "open landscape under starry sky, quiet isolation"
+}
+
 STATIC_STYLE = (
-    "Studio Ghibli–inspired cinematic illustration with realistic lighting. "
-    "Soft natural sunlight with visible bloom and gentle lens diffusion. "
-    "Physically believable shadows with smooth falloff and warm global illumination. "
-    "Painterly textures with restrained line work, not anime sharpness. "
-    "Subtle film grain, atmospheric depth, quiet nostalgic mood. "
-    "Golden hour lighting, long soft shadows, realistic sky luminance."
+    "Studio Ghibli–inspired illustration with realistic cinematic lighting. "
+    "Physically believable shadows, soft bloom highlights, gentle lens diffusion. "
+    "Painterly textures, restrained line work, natural color grading. "
+    "Subtle film grain, nostalgic atmosphere, emotional stillness."
 )
 
 # =========================================================
-# 1. CONCEPT
+# 1. PICK SCENE + HUMAN TEXT
 # =========================================================
-def generate_concept():
-    print("1. Generating Concept (GPT-5.2)...")
+def pick_concept():
+    scene_key = random.choice(list(SCENES.keys()))
+    text = random.choice(THOUGHT_BANK[scene_key])
+    scene_prompt = f"{SCENES[scene_key]}. {STATIC_STYLE}"
 
-    r = client.chat.completions.create(
-        model="gpt-5.2-chat-latest",
-        messages=[
-            {
-                "role": "system",
-                "content": (
-                    "Output EXACTLY:\n"
-                    "TEXT: <sentence>\n"
-                    "POSITION: TOP or BOTTOM\n"
-                    "SCENE: <visual description>"
-                ),
-            },
-            {
-                "role": "user",
-                "content": "Write a poetic sentence (max 15 words) about memory or time."
-            }
-        ],
-    )
-
-    lines = r.choices[0].message.content.strip().splitlines()
-    text = lines[0].replace("TEXT:", "").strip()
-    position = lines[1].replace("POSITION:", "").strip().upper()
-    scene = lines[2].replace("SCENE:", "").strip()
-
-    prompt = f"{scene}. {STATIC_STYLE}"
+    print("SCENE:", scene_key)
     print("TEXT:", text)
-    print("POSITION:", position)
-    return text, position, prompt
+
+    return text, scene_prompt
 
 # =========================================================
-# 2. IMAGE GENERATION (SUPPORTED SIZE)
+# 2. IMAGE GENERATION (SUPPORTED SIZE ONLY)
 # =========================================================
 def generate_image(prompt):
-    print("2. Generating HD Image (Base64 Mode, supported size)...")
-
     r = client.images.generate(
         model="gpt-image-1",
         prompt=prompt,
-        size="1024x1536",  # ✅ supported
+        size="1024x1536",
         n=1,
     )
 
     image_b64 = r.data[0].b64_json
-    if not image_b64:
-        raise Exception("No image data returned")
-
-    print("Image generation OK (base64)")
     return BytesIO(base64.b64decode(image_b64))
 
 # =========================================================
-# 2.5 SAFE CROP TO 4:5 (1024x1280)
+# 3. SAFE CROP TO 4:5
 # =========================================================
 def crop_to_4_5(img):
-    target_width = img.width
-    target_height = int(target_width * 5 / 4)  # 1024 → 1280
-
-    if img.height < target_height:
-        raise Exception("Image too short to crop to 4:5")
-
-    top = (img.height - target_height) // 2
-    bottom = top + target_height
-    return img.crop((0, top, target_width, bottom))
+    target_h = int(img.width * 5 / 4)
+    top = (img.height - target_h) // 2
+    return img.crop((0, top, img.width, top + target_h))
 
 # =========================================================
-# 3. TYPOGRAPHY (EDITORIAL SCALE)
+# 4. AUTO CONTRAST DETECTION
 # =========================================================
-def add_text_and_watermark(image_buffer, text, position):
-    print("3. Designing typography...")
+def is_background_dark(img, box):
+    crop = img.crop(box)
+    stat = ImageStat.Stat(crop)
+    return sum(stat.mean) / 3 < 120
 
-    img = Image.open(image_buffer).convert("RGBA")
-    img = crop_to_4_5(img)  # now exactly 1024x1280
+# =========================================================
+# 5. LOCKED TEXT BOX + AUTO FONT SCALE
+# =========================================================
+def draw_text(img, text):
+    draw = ImageDraw.Draw(img)
 
-    canvas = Image.new("RGBA", img.size, (0, 0, 0, 0))
-    draw = ImageDraw.Draw(canvas)
+    box_width = int(img.width * 0.8)
+    box_height = 300
+    box_x = (img.width - box_width) // 2
+    box_y = int(img.height * 0.18)
 
-    try:
-        font_main = ImageFont.truetype("font.ttf", 54)
-        font_mark = ImageFont.truetype("font.ttf", 30)
+    box = (box_x, box_y, box_x + box_width, box_y + box_height)
+    dark_bg = is_background_dark(img, box)
 
-    except:
-        font_main = ImageFont.load_default()
-        font_mark = ImageFont.load_default()
+    fill = (245, 245, 240, 255) if dark_bg else (30, 30, 30, 255)
+    shadow = (0, 0, 0, 80) if dark_bg else (255, 255, 255, 80)
 
-    lines = textwrap.wrap(text, 26)
-    y = int(img.height * (0.18 if position == "TOP" else 0.72))
+    font_size = 56
+    while font_size > 34:
+        font = ImageFont.truetype(FONT_MAIN, font_size)
+        wrapped = textwrap.wrap(text, width=28)
 
-    for line in lines:
-        bbox = draw.textbbox((0, 0), line, font=font_main)
-        x = (img.width - (bbox[2] - bbox[0])) / 2
+        total_height = len(wrapped) * (font_size + 10)
+        if total_height <= box_height:
+            break
+        font_size -= 2
 
-        # ultra-soft shadow for legibility only
-draw.text((x + 1, y + 1), line, font=font_main, fill=(0, 0, 0, 60))
+    y = box_y + (box_height - total_height) // 2
 
-# slightly warm white (matches reference)
-draw.text((x, y), line, font=font_main, fill=(245, 245, 240, 255))
-        y += 74
+    for line in wrapped:
+        w = draw.textbbox((0, 0), line, font=font)[2]
+        x = (img.width - w) // 2
 
-    # watermark
-    wm_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
+        draw.text((x + 1, y + 1), line, font=font, fill=shadow)
+        draw.text((x, y), line, font=font, fill=fill)
+        y += font_size + 10
+
+# =========================================================
+# 6. WATERMARK
+# =========================================================
+def draw_watermark(img):
+    draw = ImageDraw.Draw(img)
+    font = ImageFont.truetype(FONT_WATERMARK, 28)
+
+    w = draw.textbbox((0, 0), WATERMARK_TEXT, font=font)[2]
     draw.text(
-        ((img.width - (wm_bbox[2] - wm_bbox[0])) / 2, img.height - 60),
+        ((img.width - w) // 2, img.height - 60),
         WATERMARK_TEXT,
-        font=font_mark,
+        font=font,
         fill=(255, 255, 255, 140),
     )
 
-    final_img = Image.alpha_composite(img, canvas)
-    out = BytesIO()
-    final_img.convert("RGB").save(out, "JPEG", quality=95)
-    out.seek(0)
+# =========================================================
+# 7. COMPOSE FINAL IMAGE
+# =========================================================
+def compose(image_buffer, text):
+    img = Image.open(image_buffer).convert("RGB")
+    img = crop_to_4_5(img)
 
-    print("Typography completed successfully")
+    draw_text(img, text)
+    draw_watermark(img)
+
+    out = BytesIO()
+    img.save(out, "JPEG", quality=95)
+    out.seek(0)
     return out
 
 # =========================================================
-# 4. FACEBOOK POST
+# 8. FACEBOOK POST
 # =========================================================
 def post_to_facebook(image_buffer):
-    print("Proceeding to Facebook post...")
-    print("4. Posting to Facebook...")
-
     url = f"https://graph.facebook.com/v19.0/{FB_PAGE_ID}/photos"
     data = {"access_token": FB_TOKEN, "published": "true"}
     files = {"source": ("image.jpg", image_buffer, "image/jpeg")}
 
     r = requests.post(url, data=data, files=files)
-    print("FB STATUS:", r.status_code)
-    print("FB RESPONSE:", r.text)
-
     if r.status_code != 200:
-        raise Exception(f"Facebook post failed: {r.text}")
-
-    print("SUCCESS: Facebook post is live")
+        raise Exception(r.text)
 
 # =========================================================
 # MAIN
 # =========================================================
 if __name__ == "__main__":
-    text, position, prompt = generate_concept()
-    image_buffer = generate_image(prompt)
-    final_image = add_text_and_watermark(image_buffer, text, position)
-    post_to_facebook(final_image)
-
+    text, prompt = pick_concept()
+    img_buf = generate_image(prompt)
+    final = compose(img_buf, text)
+    post_to_facebook(final)

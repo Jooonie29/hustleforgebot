@@ -349,6 +349,8 @@ def generate_image_from_scene(scene_prompt):
 # IMAGE PROCESSING
 # =========================================================
 FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
+FONT_MARK = "fonts/LibreBaskerville-Italic.ttf"
+WATERMARK_TEXT = "© Yesterday's Letters"
 
 def crop_to_4_5(img):
     target_h = int(img.width * 5 / 4)
@@ -391,6 +393,16 @@ def add_text(image_buffer, text):
         w = draw.textlength(l, font=font)
         draw.text(((img.width - w) // 2, y), l, font=font, fill=color)
         y += 54
+
+    # Watermark
+    font_mark = ImageFont.truetype(FONT_MARK, 28)
+    wm_bbox = draw.textbbox((0, 0), WATERMARK_TEXT, font=font_mark)
+    draw.text(
+        ((img.width - (wm_bbox[2] - wm_bbox[0])) / 2, img.height - 60),
+        WATERMARK_TEXT,
+        font=font_mark,
+        fill=(255, 255, 255, 140),
+    )
 
     final = Image.alpha_composite(img, draw_layer)
     out = BytesIO()

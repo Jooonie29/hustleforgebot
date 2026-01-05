@@ -72,6 +72,15 @@ def check_kill_switch():
         return True
     return False
 
+def validate_fonts():
+    """Check that all required fonts exist before making API calls."""
+    required_fonts = [
+        "fonts/LibreBaskerville-Regular.ttf",
+    ]
+    missing = [f for f in required_fonts if not os.path.exists(f)]
+    if missing:
+        raise Exception(f"Missing font files: {missing}")
+
 def enable_kill_switch():
     with open(KILL_SWITCH_FILE, "w") as f:
         f.write("DISABLED DUE TO FB API ERROR")
@@ -439,6 +448,9 @@ if __name__ == "__main__":
     if check_kill_switch():
         print("KILL SWITCH ACTIVE. Posting disabled. Exiting.")
         exit(0)
+    
+    # Validate fonts exist before making any API calls
+    validate_fonts()
     
     # NEW: Token Health Check
     if not check_token_health():

@@ -347,7 +347,7 @@ def generate_image_from_scene(scene_prompt):
 # IMAGE PROCESSING
 # =========================================================
 FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
-FONT_MARK = "fonts/LibreBaskerville-Italic.ttf"
+FONT_MARK = "fonts/LibreBaskerville-Regular.ttf"
 WATERMARK_TEXT = "© Yesterday's Letters"
 
 def crop_to_4_5(img):

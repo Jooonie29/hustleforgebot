@@ -33,7 +33,7 @@ else:
 # =========================================================
 # COST CONTROL
 # =========================================================
-POST_WINDOWS = [(19, 22)]  # 7–9 PM ONLY
+POST_WINDOWS = [(19, 22)]  # 7–10 PM (expanded for testing)
 LAST_POST_FILE = "last_post.txt"
 HOLIDAY_HISTORY_FILE = "holiday_history.json"
 
@@ -295,7 +295,7 @@ SCENE_PROMPTS = {
 STATIC_STYLE = (
     "Studio Ghibli anime illustration with hyper-realistic lighting and shadows. "
     "Warm dappled sunlight, natural shadow casting, detailed reflections on water and surfaces. "
-    "Makoto Shinkai inspired vibrant colors and cloud details. "
+    "Vibrant saturated colors, dramatic volumetric clouds, soft bloom effects. "
     "Rich environmental textures, lush vegetation, cozy lived-in atmosphere. "
     "Cinematic composition with depth, atmospheric perspective, and nostalgic mood."
 )
@@ -607,4 +607,3 @@ if __name__ == "__main__":
         log_engagement(scene_name, text, f"FAILED: {e}")
         log_error(e)
         exit(1)
-

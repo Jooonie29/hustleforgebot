@@ -19,6 +19,7 @@ FB_TOKEN = os.environ.get("FB_PAGE_ACCESS_TOKEN")
 FB_PAGE_ID = os.environ.get("FB_PAGE_ID")
 TIMEZONE = os.getenv("TIMEZONE", "Asia/Manila")
 DRY_RUN = os.getenv("DRY_RUN", "false").lower() == "true"
+FORCE_POST = os.getenv("FORCE_POST", "false").lower() == "true"  # Bypass time/daily gates for testing
 
 if not OPENAI_KEY and not DRY_RUN:
     raise Exception("OPENAI_API_KEY missing")
@@ -614,7 +615,8 @@ if __name__ == "__main__":
     print(f"Starting Bot. Dry Run: {DRY_RUN}")
 
     # 1. Safety Checks
-    if check_kill_switch():
+    # 1. Safety Checks
+    if check_kill_switch() and not FORCE_POST:
         print("KILL SWITCH ACTIVE. Posting disabled. Exiting.")
         exit(0)
     
@@ -623,20 +625,24 @@ if __name__ == "__main__":
     
     # Token Health Check
     if not check_token_health():
-        print("Token Health Check Failed. Kill switch enabled. Exiting.")
-        exit(1)
+        print("Token Health Check Failed.")
+        if not FORCE_POST:
+            print("Kill switch enabled. Exiting.")
+            exit(1)
+        else:
+            print("FORCE_POST enabled. Ignoring health check failure.")
 
     if check_monthly_cap() and not DRY_RUN:
         print("MONTHLY CAP REACHED. Exiting.")
         exit(0)
 
-    # 2. Time gate
-    if not is_good_posting_time() and not DRY_RUN:
+    # 2. Time gate (skipped if FORCE_POST=true)
+    if not is_good_posting_time() and not DRY_RUN and not FORCE_POST:
         print("Outside posting window. Skipping.")
         exit(0)
 
-    # 3. Daily gate
-    if already_posted_today() and not DRY_RUN:
+    # 3. Daily gate (skipped if FORCE_POST=true)
+    if already_posted_today() and not DRY_RUN and not FORCE_POST:
         print("Already posted today. Skipping.")
         exit(0)
 

@@ -478,7 +478,7 @@ def generate_image_from_scene(prompt):
         return out
 
     r = client.images.generate(
-        model="gpt-image-1",
+        model="gpt-image-1.5",
         prompt=prompt,
         size="1024x1536",
         n=1,

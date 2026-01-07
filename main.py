@@ -150,12 +150,16 @@ def check_token_health():
     try:
         r = requests.get(url)
         if r.status_code != 200:
-            log_error(f"Token Health Check Failed: {r.text}")
+            msg = f"Token Health Check Failed: {r.text}"
+            print(msg)  # Print to console for GitHub Logs
+            log_error(msg)
             enable_kill_switch()
             return False
         return True
     except Exception as e:
-        log_error(f"Token Health Check Exception: {e}")
+        msg = f"Token Health Check Exception: {e}"
+        print(msg)  # Print to console
+        log_error(msg)
         enable_kill_switch()
         return False
 

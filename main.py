@@ -33,7 +33,7 @@ else:
 # =========================================================
 # COST CONTROL
 # =========================================================
-POST_WINDOWS = [(0, 2)]  # 7–10 PM (expanded for testing)
+POST_WINDOWS = [(13, 15)]  # 1-3 PM Manila time (for testing)
 LAST_POST_FILE = "last_post.txt"
 HOLIDAY_HISTORY_FILE = "holiday_history.json"
 

@@ -160,64 +160,68 @@ def check_token_health():
 
 
 # =========================================================
-# CURATED HUMAN THOUGHT BANK - 38 UNIQUE THOUGHTS
+# CURATED HUSTLE THOUGHT BANK - 42 UNIQUE THOUGHTS
 # =========================================================
 THOUGHT_BANK = {
-    # GROWTH & PATIENCE (7)
-    "growth": [
-        "Growth is quiet when no one is watching.",
-        "Not everything that's slow is lost.",
-        "I stayed long enough to hear myself think.",
-        "Becoming who you're meant to be takes time.",
-        "Some seasons are just for learning, not harvesting.",
-        "You are not behind. You are exactly where you need to be.",
-        "The version of you that's coming will be worth the wait.",
+    # GRIND & HUSTLE (7)
+    "grind": [
+        "While they sleep, I build.",
+        "The grind doesn't care about your excuses.",
+        "Late nights now. Private jets later.",
+        "Work in silence. Let success make the noise.",
+        "Your only competition is the person you were yesterday.",
+        "Outwork everyone. Outlearn everyone. Outlast everyone.",
+        "The hustle is lonely. So is the top. Get used to it.",
     ],
-    # FAITH & TRUST (7)
-    "faith": [
-        "Some nights, faith is the only shelter.",
-        "I whispered prayers I didn't know how to say out loud.",
-        "God hears you, even in the rain.",
-        "God has a plan. Trust, wait, and believe.",
-        "Even here, I was not forgotten.",
-        "Faith sometimes looks like the next step.",
-        "When you can't see the path, trust the One who does.",
+    # VENGEANCE & PROVE THEM WRONG (7)
+    "vengeance": [
+        "Let your success be the revenge they never saw coming.",
+        "They laughed at my dreams. Now they watch me live them.",
+        "Every rejection is just fuel for the fire.",
+        "Doubt me. It only makes my victory sweeter.",
+        "I remember every single person who counted me out.",
+        "Use their disrespect as your motivation.",
+        "The best revenge is massive success.",
     ],
-    # LOVE & CONNECTION (6)
-    "love": [
-        "Some friendships are answers to prayers we never said out loud.",
-        "Love is choosing patience when it would be easier to leave.",
-        "The people who stay are the ones who matter.",
-        "Not every connection is meant to last, but some are meant to teach.",
-        "You are someone's reason to believe in kindness.",
-        "Home isn't always a place. Sometimes it's a person.",
+    # DISCIPLINE & CONSISTENCY (7)
+    "discipline": [
+        "Motivation fades. Discipline stays.",
+        "Champions are made when no one is watching.",
+        "Show up even when you don't want to. Especially then.",
+        "Consistency is more powerful than talent.",
+        "Discipline is choosing between what you want now and what you want most.",
+        "Suffer the pain of discipline or suffer the pain of regret.",
+        "I don't count days. I make days count.",
     ],
-    # HEALING & LETTING GO (6)
-    "healing": [
-        "I let go of what I could no longer carry.",
-        "Healing doesn't mean forgetting. It means it no longer controls you.",
-        "Some goodbyes are blessings in disguise.",
-        "You don't have to carry yesterday into tomorrow.",
-        "Rest is not quitting. It's preparation.",
-        "It's okay to outgrow who you used to be.",
+    # MINDSET & MENTAL TOUGHNESS (7)
+    "mindset": [
+        "A lion doesn't lose sleep over the opinions of sheep.",
+        "Your mind quits a thousand times before your body does.",
+        "Weak thoughts create weak results.",
+        "Think like a winner. Train like a winner. Become a winner.",
+        "The only limits that exist are the ones you accept.",
+        "Pressure either bursts pipes or creates diamonds.",
+        "I didn't come this far to only come this far.",
     ],
-    # HOPE & NEW BEGINNINGS (7)
-    "hope": [
-        "The stars stayed with me.",
-        "Still waters teach louder lessons.",
-        "Some answers arrive gently.",
-        "Hope often arrives quietly, not loudly.",
-        "Every ending is just a new beginning wearing a disguise.",
-        "The light you're looking for might already be inside you.",
-        "Tomorrow is unwritten. That's the beauty of it.",
+    # SUCCESS & ACHIEVEMENT (7)
+    "success": [
+        "Success isn't given. It's earned.",
+        "They don't want you to win. Win anyway.",
+        "I'm not lucky. I'm relentless.",
+        "The top is lonely, but the view is worth it.",
+        "Build in silence. Arrive in violence.",
+        "Results speak louder than intentions.",
+        "Winners find ways. Losers find excuses.",
     ],
-    # PEACE & SOLITUDE (5)
-    "peace": [
-        "I didn't know where I was going, only that I had to keep walking.",
-        "The road teaches patience.",
-        "Silence isn't empty. It's full of answers.",
-        "Peace isn't the absence of storms. It's finding calm within them.",
-        "Sometimes doing nothing is the bravest thing you can do.",
+    # STRUGGLE & GROWTH THROUGH PAIN (7)
+    "struggle": [
+        "The pain you feel today is the strength you'll have tomorrow.",
+        "Embrace the struggle. It's forging you into something unstoppable.",
+        "Rock bottom became the solid foundation I built my empire on.",
+        "Every setback is a setup for a comeback.",
+        "I didn't come from money. I came from hunger.",
+        "Hard times create strong people.",
+        "The wound is where the light enters. Then the fire begins.",
     ],
 }
 
@@ -228,91 +232,91 @@ THOUGHT_BANK = {
 # SCENES (what we're looking at)
 SCENES = [
     {
-        "name": "rural_path",
-        "scene": "A winding dirt path through tall grass overlooking a rural town",
-        "details": "Rolling hills, scattered rooftops, wildflowers along the path"
+        "name": "city_skyline_night",
+        "scene": "City skyline at night with lit office building windows",
+        "details": "Single illuminated corner office, distant city lights, urban ambition"
     },
     {
-        "name": "calm_river",
-        "scene": "A calm river with shimmering reflections and overhanging trees",
-        "details": "Mossy riverbanks, water lilies, lush greenery"
+        "name": "empty_gym_4am",
+        "scene": "Empty industrial gym at 4 AM with harsh overhead lights",
+        "details": "Heavy weights, worn floor, motivational posters, solitary dedication"
     },
     {
-        "name": "wooden_boat",
-        "scene": "A small wooden boat drifting quietly beneath leafy branches",
-        "details": "Crystal clear water, dappled light, overhanging fruit trees"
+        "name": "late_night_desk",
+        "scene": "Late-night desk setup with laptop glow and coffee cups",
+        "details": "Multiple monitors, scattered notes, dim room, focused energy"
     },
     {
-        "name": "countryside_hill",
-        "scene": "A countryside hillside beneath a large shade tree",
-        "details": "Grassy meadow, distant village rooftops, scattered wildflowers"
+        "name": "rain_streets_dawn",
+        "scene": "Rain-soaked city streets at dawn with neon reflections",
+        "details": "Empty sidewalks, puddle reflections, early morning hustle"
     },
     {
-        "name": "seaside_cabin",
-        "scene": "A cozy seaside cabin surrounded by plants",
-        "details": "Weathered wood, potted flowers, ocean view, sandy path"
+        "name": "midnight_coffee_shop",
+        "scene": "24-hour coffee shop at midnight with a lone figure working",
+        "details": "Warm interior light, laptop open, coffee steam, urban solitude"
     },
     {
-        "name": "ocean_kitchen",
-        "scene": "An open kitchen interior overlooking the ocean",
-        "details": "Warm sunlight streaming in, potted herbs, vintage details"
+        "name": "construction_sunrise",
+        "scene": "Construction site at sunrise with workers arriving",
+        "details": "Steel beams, hard hats, orange sky, building something great"
     },
     {
-        "name": "campfire_van",
-        "scene": "A parked van in an open field near a quiet campfire",
-        "details": "Open countryside, distant hills, warm firelight glow"
+        "name": "empty_boardroom",
+        "scene": "Empty corporate boardroom at night with city view",
+        "details": "Glass walls, leather chairs, city lights backdrop, ambition"
     },
     {
-        "name": "village_road",
-        "scene": "A narrow village road winding through rolling hills",
-        "details": "Stone walls, cottages, trees lining the road, peaceful atmosphere"
+        "name": "mountain_peak_climb",
+        "scene": "Person standing at mountain peak after grueling climb",
+        "details": "Dramatic clouds below, harsh wind, victorious moment, earned view"
     },
 ]
 
 # SEASONS + SKY
 SEASONS = {
-    "summer": [
-        "Bright summer sky with towering white cumulus clouds",
-        "Deep blue sky with soft atmospheric haze",
+    "night_grind": [
+        "Dark city sky with scattered artificial lights",
+        "Deep midnight blue with distant skyscraper silhouettes",
     ],
-    "autumn": [
-        "Soft golden sky with warm amber clouds",
-        "Clear afternoon sky with drifting autumn leaves",
+    "storm_rising": [
+        "Dramatic storm clouds gathering with lightning flashes",
+        "Heavy gray clouds breaking with golden light piercing through",
     ],
-    "spring_rain": [
-        "Overcast spring sky with gentle rainfall",
-        "Soft gray-blue clouds with light mist",
+    "pre_dawn": [
+        "Cold pre-dawn sky transitioning from black to deep blue",
+        "First light of day breaking over urban horizon",
     ],
-    "winter": [
-        "Clear winter sky with pale sunlight",
-        "Cold blue sky with thin clouds and crisp air",
+    "harsh_winter": [
+        "Cold stark winter sky with sharp contrast",
+        "Steel gray overcast with biting cold atmosphere",
     ],
 }
 
 # LIGHTING OPTIONS
 LIGHTING_OPTIONS = [
-    "Warm midday sunlight with natural dappled shadows",
-    "Low-angle golden hour sunlight casting long shadows",
-    "Cool moonlight softly illuminating the landscape",
-    "Diffused soft light through clouds and mist",
-    "Crisp winter sunlight with cool, elongated shadows",
+    "Harsh neon city lights casting stark shadows",
+    "Single desk lamp cutting through darkness",
+    "Dramatic storm-break light piercing through clouds",
+    "Cold blue pre-dawn light with high contrast",
+    "Industrial overhead fluorescent lighting",
 ]
 
 # ATMOSPHERE + MOTION
 ATMOSPHERE_OPTIONS = [
-    "Soft atmospheric haze with subtle lens flare",
-    "Gentle breeze moving grass and leaves",
-    "Light mist near the horizon with soft light bloom",
-    "Rain ripples on water and wet reflective surfaces",
-    "Still air with faint drifting particles",
+    "Rain streaking down city windows with neon reflections",
+    "Steam rising from breath in cold morning air",
+    "Industrial haze with electric tension in the atmosphere",
+    "Urban dust catching harsh light beams",
+    "Coffee steam rising in dark room with focused energy",
 ]
 
 # MOOD OPTIONS
 MOOD_OPTIONS = [
-    "Calm, nostalgic, peaceful mood",
-    "Quiet, reflective, emotional mood",
-    "Warm, comforting, tranquil mood",
-    "Serene, contemplative, timeless mood",
+    "Intense, driven, relentless mood",
+    "Hungry, determined, focused mood",
+    "Vengeful, motivated, unstoppable mood",
+    "Gritty, ambitious, powerful mood",
 ]
 
 def generate_image_prompt(scene_data):
@@ -324,17 +328,17 @@ def generate_image_prompt(scene_data):
     atmosphere = random.choice(ATMOSPHERE_OPTIONS)
     mood = random.choice(MOOD_OPTIONS)
     
-    # Build the master prompt
+    # Build the master prompt - HUSTLE FORGE STYLE
     prompt = (
-        f"Cinematic anime-style illustration, ultra high detail, 8K quality, painterly digital art. "
+        f"Dramatic photorealistic digital art, ultra high detail, 8K quality, cinematic photography style. "
         f"{scene_data['scene']}, with a wide sense of depth and scale. "
         f"{scene_data['details']}. "
         f"{sky}. "
         f"{lighting}. "
         f"{atmosphere}. "
-        f"Rich saturated colors, detailed foliage and natural textures. "
-        f"{mood}, slice-of-life atmosphere. "
-        f"Anime background art quality, hand-painted look, soft brush textures, realistic lighting, no text, no watermark."
+        f"High contrast, deep shadows, bold colors, urban grit aesthetic. "
+        f"{mood}, hustle culture atmosphere. "
+        f"Magazine quality, sharp focus, dramatic composition, no text, no watermark."
     )
     
     return prompt, season_key
@@ -344,10 +348,9 @@ SCENE_PROMPTS = {scene["name"]: scene["scene"] for scene in SCENES}
 
 # Seasonal Map: Month -> List of preferred thought categories
 SEASONAL_MAP = {
-    "12": ["hope", "faith"],
-    "01": ["hope", "growth"],
-    "02": ["love"],
-    "10": ["healing", "peace"],
+    "01": ["mindset", "discipline"],   # New Year - fresh discipline
+    "09": ["grind", "discipline"],     # Back to work season
+    "12": ["success", "struggle"],     # Year-end reflection on wins
 }
 
 def choose_scene_and_text():
@@ -412,18 +415,18 @@ def choose_scene_and_text():
 # HOLIDAY POSTS — EXACT DATE ONLY
 # =========================================================
 HOLIDAY_POSTS = {
-    (1, 1):  {"name": "new_year", "text": "This year, I'm learning to walk slower and trust God more.", "scene": "quiet lakeside at dawn, person sitting on dock watching sunrise, mist over water"},
-    (2, 14): {"name": "valentines", "text": "Love is choosing patience when it would be easier to leave.", "scene": "couple walking hand in hand on evening street with warm cafe lights"},
-    (3, 8):  {"name": "womens_day", "text": "Strong women don't always speak loudly. Sometimes they endure quietly.", "scene": "woman by window with morning light streaming in, cup of coffee, peaceful strength"},
-    (4, 1):  {"name": "april_fools", "text": "Not everything that looks like failure is the end of the story.", "scene": "winding road through hills with light breaking through clouds, hopeful journey"},
-    (5, 1):  {"name": "labor_may", "text": "The work you do in silence still matters.", "scene": "worker resting at sunset, overlooking completed work, peaceful exhaustion"},
-    (6, 1):  {"name": "pride", "text": "You are allowed to exist without explaining yourself.", "scene": "person standing in open field at sunrise, arms open, freedom"},
-    (7, 4):  {"name": "independence", "text": "Freedom begins when fear no longer decides for you.", "scene": "open road under wide dramatic sky, journey ahead"},
-    (8, 4):  {"name": "friendship", "text": "Some friendships are answers to prayers we never said out loud.", "scene": "two friends sitting on hillside at golden hour, laughing together"},
-    (9, 1):  {"name": "labor_sep", "text": "Rest is not quitting. It's preparation.", "scene": "empty park bench under shady tree, late afternoon dappled light"},
-    (10, 31):{"name": "halloween", "text": "Not everything hidden is dangerous. Some things are healing.", "scene": "foggy forest path with lantern glow, mysterious but peaceful"},
-    (11, 28):{"name": "thanksgiving", "text": "Gratitude doesn't erase pain, but it softens the weight.", "scene": "warm dinner table by window with autumn light, family gathering"},
-    (12, 25):{"name": "christmas", "text": "Hope often arrives quietly, not loudly.", "scene": "snowy street at night with warm glowing windows, peaceful christmas eve"},
+    (1, 1):  {"name": "new_year", "text": "New year. Same hunger. No days off.", "scene": "city skyline at dawn with lone figure watching from rooftop, new year sunrise"},
+    (2, 14): {"name": "valentines", "text": "Fall in love with the grind. It will never let you down.", "scene": "late night desk with laptop and coffee, focused dedication, warm lamp light"},
+    (3, 8):  {"name": "womens_day", "text": "Strong women don't wait for opportunities. They create them.", "scene": "woman in power suit walking through city at sunrise, confident stride"},
+    (4, 1):  {"name": "april_fools", "text": "The biggest joke? Thinking you can outwork me.", "scene": "empty gym at 4am with heavy weights, single figure training"},
+    (5, 1):  {"name": "labor_may", "text": "They call it work. I call it war.", "scene": "construction worker at dawn, steel and sweat, building something great"},
+    (6, 1):  {"name": "pride", "text": "Be proud of how far you've come. Be hungry for how far you'll go.", "scene": "mountain peak view at sunset, victorious stance, clouds below"},
+    (7, 4):  {"name": "independence", "text": "Financial freedom is the only independence worth fighting for.", "scene": "corner office at night, city lights below, empire builder"},
+    (8, 4):  {"name": "friendship", "text": "Your circle should motivate you, not comfort your mediocrity.", "scene": "two figures training together at dawn, mutual respect and drive"},
+    (9, 1):  {"name": "labor_sep", "text": "While they vacation, I execute.", "scene": "late night office, everyone gone home, one light still on"},
+    (10, 31):{"name": "halloween", "text": "My demons? I put them to work.", "scene": "dark city street at night with lone figure walking purposefully, neon reflections"},
+    (11, 28):{"name": "thanksgiving", "text": "Grateful for the struggle that made me dangerous.", "scene": "man looking out window at city dawn, reflection on the journey"},
+    (12, 25):{"name": "christmas", "text": "The best gift you can give yourself is results.", "scene": "person working at desk on christmas eve, dedication, city lights outside"},
 }
 
 def load_holiday_history():
@@ -488,7 +491,7 @@ def generate_image_from_scene(prompt):
 # =========================================================
 FONT_MAIN = "fonts/LibreBaskerville-Regular.ttf"
 FONT_MARK = "fonts/LibreBaskerville-Regular.ttf"
-WATERMARK_TEXT = "© Yesterday's Letters"
+WATERMARK_TEXT = "© HustleForge"
 
 def crop_to_4_5(img):
     target_h = int(img.width * 5 / 4)
@@ -643,11 +646,11 @@ if __name__ == "__main__":
         text = holiday["text"]
         # For holidays, use the old-style direct prompt
         scene_prompt = (
-            f"Cinematic anime-style illustration, ultra high detail, 8K quality, painterly digital art. "
+            f"Dramatic photorealistic digital art, ultra high detail, 8K quality, cinematic photography style. "
             f"{holiday['scene']}, with a wide sense of depth and scale. "
-            f"Rich saturated colors, detailed foliage and natural textures. "
-            f"Calm, nostalgic, peaceful mood, slice-of-life atmosphere. "
-            f"Anime background art quality, hand-painted look, soft brush textures, realistic lighting, no text, no watermark."
+            f"High contrast, deep shadows, bold colors, urban grit aesthetic. "
+            f"Intense, driven, relentless mood, hustle culture atmosphere. "
+            f"Magazine quality, sharp focus, dramatic composition, no text, no watermark."
         )
         is_holiday = True
         scene_name = "holiday_" + holiday["name"]

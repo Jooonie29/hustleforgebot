@@ -550,41 +550,64 @@ def add_text(image_buffer, text):
             current = w
     lines.append(current)
 
+    # ---- LAYER SETUP ----
+    # 1. Background Box Layer (Separated for perfect alpha blending)
+    box_layer = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    box_draw = ImageDraw.Draw(box_layer)
+    
+    # 2. Text Overlay (We draw on this at the end or directly on composed img)
+    # We will draw text directly on the composed image to keep it crisp.
+
     # ---- VERTICAL CENTERING INSIDE BOX ----
     y = BOX_Y + (BOX_HEIGHT - len(lines) * LINE_HEIGHT) // 2
 
+    # First Pass: Draw all Background Boxes
+    # We loop through lines to draw the boxes on box_layer
+    # Using explicit math instead of textbbox for guaranteed size
+    current_y = y
     for line in lines:
         w = draw.textlength(line, font=font)
         x = (img.width - w) // 2
         
-        # Calculate exact bounding box for the text
-        bbox = draw.textbbox((x, y), line, font=font)
-        # bbox is (left, top, right, bottom)
+        # Manual Box Calculation (Foolproof)
+        # Top: current y, Bottom: current y + FONT_SIZE * 1.2 (visual height)
+        # We center the visual height around the text baseline roughly
         
-        # Draw background highlights
-        draw.rectangle(
-            (bbox[0] - PAD_X, bbox[1] - PAD_Y, bbox[2] + PAD_X, bbox[3] + PAD_Y),
+        # Fine-tuned vertical alignment:
+        # y is the top-left of the text.
+        box_top = current_y - PAD_Y
+        box_bottom = current_y + int(FONT_SIZE * 1.1) + PAD_Y
+        
+        box_draw.rectangle(
+            (x - PAD_X, box_top, x + w + PAD_X, box_bottom),
             fill=BG_COLOR
         )
+        current_y += LINE_HEIGHT
 
-        # Draw Text
-        draw.text((x, y), line, font=font, fill=TEXT_COLOR)
-
-        y += LINE_HEIGHT
+    # Merge Box Layer onto Base Image
+    img = Image.alpha_composite(img, box_layer)
+    
+    # Second Pass: Draw White Text on top of the merged image
+    draw_final = ImageDraw.Draw(img)
+    current_y = y  # Reset Y
+    for line in lines:
+        w = draw.textlength(line, font=font)
+        x = (img.width - w) // 2
+        draw_final.text((x, current_y), line, font=font, fill=TEXT_COLOR)
+        current_y += LINE_HEIGHT
 
     # ---- WATERMARK (unchanged, quieter) ----
     mark_font = ImageFont.truetype(FONT_MAIN, 26)
-    mw = draw.textlength(WATERMARK_TEXT, font=mark_font)
-    draw.text(
+    mw = draw_final.textlength(WATERMARK_TEXT, font=mark_font)
+    draw_final.text(
         ((img.width - mw) // 2, img.height - 58),
         WATERMARK_TEXT,
         font=mark_font,
         fill=(255, 255, 255, 130),
     )
 
-    final = Image.alpha_composite(img, overlay)
     out = BytesIO()
-    final.convert("RGB").save(out, "JPEG", quality=95)
+    img.convert("RGB").save(out, "JPEG", quality=95)
     out.seek(0)
     return out
 

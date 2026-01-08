@@ -516,19 +516,17 @@ def add_text(image_buffer, text):
     BOX_HEIGHT = LINE_HEIGHT * 4
     BOX_X = (img.width - BOX_WIDTH) // 2
 
-    # ---- SMART VERTICAL ZONES (top / middle / lower-mid) ----
+    # ---- SMART VERTICAL ZONES (Top Sky / Bottom Hoodie) ----
+    # Avoid the middle (Face) entirely
     candidate_ys = [
-        int(img.height * 0.30),
-        int(img.height * 0.45),
-        int(img.height * 0.58),
+        int(img.height * 0.10),  # High Sky
+        int(img.height * 0.75),  # Low Body/Subtitle
     ]
 
     def zone_score(y):
         crop = img.crop((BOX_X, y, BOX_X + BOX_WIDTH, y + BOX_HEIGHT)).convert("L")
         stat = ImageStat.Stat(crop)
-        edges = crop.filter(ImageFilter.FIND_EDGES)
-        edge_stat = ImageStat.Stat(edges)
-        return stat.stddev[0] + edge_stat.mean[0]
+        return stat.stddev[0]  # Lowest variance = flattest area
 
     BOX_Y = min(candidate_ys, key=zone_score)
 
@@ -537,8 +535,10 @@ def add_text(image_buffer, text):
         img.crop((BOX_X, BOX_Y, BOX_X + BOX_WIDTH, BOX_Y + BOX_HEIGHT)).convert("L")
     ).mean[0]
 
-    TEXT_COLOR = (245, 245, 240, 255) if luminance < 135 else (30, 30, 30, 255)
-    SHADOW_COLOR = (0, 0, 0, 70) if luminance < 135 else (0, 0, 0, 40)
+    # Threshold raised 135 -> 145 to favor white text on moody images
+    TEXT_COLOR = (245, 245, 240, 255) if luminance < 145 else (20, 20, 20, 255)
+    # Stronger shadows for better readability
+    SHADOW_COLOR = (0, 0, 0, 100) if luminance < 145 else (255, 255, 255, 100)
 
     # ---- LINE WRAPPING ----
     words = text.split()

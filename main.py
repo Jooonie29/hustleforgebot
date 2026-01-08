@@ -325,35 +325,19 @@ MOOD_OPTIONS = [
 ]
 
 def generate_image_prompt(scene_data):
-    """Generate a complete prompt from randomized components."""
-    # Pick random components
-    season_key = random.choice(list(SEASONS.keys()))
-    sky = random.choice(SEASONS[season_key])
-    lighting = random.choice(LIGHTING_OPTIONS)
-    atmosphere = random.choice(ATMOSPHERE_OPTIONS)
-    mood = random.choice(MOOD_OPTIONS)
-    
-    # CHARACTERS: Doomer Wojack
-    character = (
-        "A realistic cinematic portrayal of the Doomer Wojack character: "
-        "a young man with pale skin, wearing a black beanie and a black hoodie, "
-        "faint stubble beard, tired red-rimmed eyes, smoking a cigarette, with a melancholic expression"
-    )
-
-    # Build the master prompt - HUSTLE FORGE STYLE
+    """Generate a prompt using the specific Wojak/Doomer template."""
+    # Build the master prompt - WOJAK DOOMER STYLE
     prompt = (
-        f"Dramatic photorealistic digital art, ultra high detail, 8K quality, cinematic photography style. "
-        f"Medium shot of {character}, situated in {scene_data['scene']}. "
-        f"{scene_data['details']}. "
-        f"{sky}. "
-        f"{lighting}. "
-        f"{atmosphere}. "
-        f"High contrast, deep shadows, bold colors, urban grit aesthetic. "
-        f"{mood}, hustle culture atmosphere. "
-        f"Magazine quality, sharp focus, dramatic composition, no text, no watermark."
+        f"A melancholic Wojak meme illustration, hand-drawn internet meme style. "
+        f"A pale white Wojak character wearing a black beanie and dark hoodie, thin face with minimal expression, slightly tired eyes, cigarette in mouth with subtle smoke. "
+        f"Side-facing portrait, shoulders visible. "
+        f"Background shows {scene_data['scene']} with {scene_data['details']}, moody and cold atmosphere. "
+        f"Flat colors, rough outlines, low-detail shading, classic Wojak / doomer aesthetic. "
+        f"High contrast, centered composition, emotional loneliness vibe, meme-style digital illustration."
     )
     
-    return prompt, season_key
+    # Season/Time key - defaulting to 'night' as it fits the doomer vibe best
+    return prompt, "doomer_night"
 
 # Keep SCENE_PROMPTS for backwards compatibility (holiday posts use this format)
 SCENE_PROMPTS = {scene["name"]: scene["scene"] for scene in SCENES}

@@ -530,13 +530,12 @@ def add_text(image_buffer, text):
 
     BOX_Y = min(candidate_ys, key=zone_score)
 
-    BOX_Y = min(candidate_ys, key=zone_score)
 
     # ---- STYLE SETTINGS (Highlight Mode) ----
     TEXT_COLOR = (255, 255, 255, 255)
-    BG_COLOR = (0, 0, 0, 180)  # Semi-transparent black
-    PAD_X = 14
-    PAD_Y = 6
+    BG_COLOR = (0, 0, 0, 230)  # Much darker, almost opaque
+    PAD_X = 20
+    PAD_Y = 10
 
     # ---- LINE WRAPPING ----
     words = text.split()
@@ -558,14 +557,13 @@ def add_text(image_buffer, text):
         w = draw.textlength(line, font=font)
         x = (img.width - w) // 2
         
+        # Calculate exact bounding box for the text
+        bbox = draw.textbbox((x, y), line, font=font)
+        # bbox is (left, top, right, bottom)
+        
         # Draw background highlights
-        # (x-pad, y-pad, x+w+pad, y+h+pad)
-        # Note: 'h' is rough font height. getbbox is safer but LINE_HEIGHT is consistent for multiline.
-        # We'll use a fixed height offset relative to LINE_HEIGHT for the box 
-        box_top = y - PAD_Y
-        box_bottom = y + FONT_SIZE + PAD_Y + 2
         draw.rectangle(
-            (x - PAD_X, box_top, x + w + PAD_X, box_bottom),
+            (bbox[0] - PAD_X, bbox[1] - PAD_Y, bbox[2] + PAD_X, bbox[3] + PAD_Y),
             fill=BG_COLOR
         )
 

@@ -533,7 +533,7 @@ def add_text(image_buffer, text):
 
     # ---- STYLE SETTINGS (Highlight Mode) ----
     TEXT_COLOR = (255, 255, 255, 255)
-    BG_COLOR = (0, 0, 0, 230)  # Much darker, almost opaque
+    BG_COLOR = (0, 0, 0, 255)  # SOLID BLACK (Debug Mode)
     PAD_X = 20
     PAD_Y = 10
 
@@ -565,6 +565,8 @@ def add_text(image_buffer, text):
     # We loop through lines to draw the boxes on box_layer
     # Using explicit math instead of textbbox for guaranteed size
     current_y = y
+    print(f"[DEBUG] Drawing {len(lines)} lines of text highlight boxes.")
+    
     for line in lines:
         w = draw.textlength(line, font=font)
         x = (img.width - w) // 2
@@ -578,6 +580,9 @@ def add_text(image_buffer, text):
         box_top = current_y - PAD_Y
         box_bottom = current_y + int(FONT_SIZE * 1.1) + PAD_Y
         
+        # Log coordinates
+        print(f"[DEBUG] Box for '{line[:10]}...': ({x - PAD_X}, {box_top}, {x + w + PAD_X}, {box_bottom})")
+        
         box_draw.rectangle(
             (x - PAD_X, box_top, x + w + PAD_X, box_bottom),
             fill=BG_COLOR
@@ -586,6 +591,7 @@ def add_text(image_buffer, text):
 
     # Merge Box Layer onto Base Image
     img = Image.alpha_composite(img, box_layer)
+    print("[DEBUG] Merged box layer onto base image.")
     
     # Second Pass: Draw White Text on top of the merged image
     draw_final = ImageDraw.Draw(img)
@@ -636,7 +642,7 @@ def post_to_facebook(image_buffer):
 # MAIN (STRICT ORDER — DO NOT CHANGE)
 # =========================================================
 if __name__ == "__main__":
-    print(f"Starting Bot. Dry Run: {DRY_RUN}")
+    print(f"Starting Bot v2.0 (DEBUG MODE). Dry Run: {DRY_RUN}")
 
     # 1. Safety Checks
     # 1. Safety Checks

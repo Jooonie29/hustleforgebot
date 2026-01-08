@@ -530,15 +530,13 @@ def add_text(image_buffer, text):
 
     BOX_Y = min(candidate_ys, key=zone_score)
 
-    # ---- LIGHT / DARK AUTO-DETECT ----
-    luminance = ImageStat.Stat(
-        img.crop((BOX_X, BOX_Y, BOX_X + BOX_WIDTH, BOX_Y + BOX_HEIGHT)).convert("L")
-    ).mean[0]
+    BOX_Y = min(candidate_ys, key=zone_score)
 
-    # Threshold raised 135 -> 145 to favor white text on moody images
-    TEXT_COLOR = (245, 245, 240, 255) if luminance < 145 else (20, 20, 20, 255)
-    # Stronger shadows for better readability
-    SHADOW_COLOR = (0, 0, 0, 100) if luminance < 145 else (255, 255, 255, 100)
+    # ---- STYLE SETTINGS (Highlight Mode) ----
+    TEXT_COLOR = (255, 255, 255, 255)
+    BG_COLOR = (0, 0, 0, 180)  # Semi-transparent black
+    PAD_X = 14
+    PAD_Y = 6
 
     # ---- LINE WRAPPING ----
     words = text.split()
@@ -559,9 +557,19 @@ def add_text(image_buffer, text):
     for line in lines:
         w = draw.textlength(line, font=font)
         x = (img.width - w) // 2
+        
+        # Draw background highlights
+        # (x-pad, y-pad, x+w+pad, y+h+pad)
+        # Note: 'h' is rough font height. getbbox is safer but LINE_HEIGHT is consistent for multiline.
+        # We'll use a fixed height offset relative to LINE_HEIGHT for the box 
+        box_top = y - PAD_Y
+        box_bottom = y + FONT_SIZE + PAD_Y + 2
+        draw.rectangle(
+            (x - PAD_X, box_top, x + w + PAD_X, box_bottom),
+            fill=BG_COLOR
+        )
 
-        # subtle shadow (legibility only)
-        draw.text((x + 2, y + 2), line, font=font, fill=SHADOW_COLOR)
+        # Draw Text
         draw.text((x, y), line, font=font, fill=TEXT_COLOR)
 
         y += LINE_HEIGHT

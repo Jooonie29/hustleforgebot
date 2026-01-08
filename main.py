@@ -333,10 +333,17 @@ def generate_image_prompt(scene_data):
     atmosphere = random.choice(ATMOSPHERE_OPTIONS)
     mood = random.choice(MOOD_OPTIONS)
     
+    # CHARACTERS: Doomer Wojack
+    character = (
+        "A realistic cinematic portrayal of the Doomer Wojack character: "
+        "a young man with pale skin, wearing a black beanie and a black hoodie, "
+        "faint stubble beard, tired red-rimmed eyes, smoking a cigarette, with a melancholic expression"
+    )
+
     # Build the master prompt - HUSTLE FORGE STYLE
     prompt = (
         f"Dramatic photorealistic digital art, ultra high detail, 8K quality, cinematic photography style. "
-        f"{scene_data['scene']}, with a wide sense of depth and scale. "
+        f"Medium shot of {character}, situated in {scene_data['scene']}. "
         f"{scene_data['details']}. "
         f"{sky}. "
         f"{lighting}. "
